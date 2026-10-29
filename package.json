@@ -1,6 +1,6 @@
 {
   "name": "luna-clasificador",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Clasificador local de archivos multimedia (película, serie, variado, programa, novela)",
   "main": "LUNA_clasificador.js",
   "files": [
@@ -23,6 +23,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/TU_USUARIO/LUNA.git"
+    "url": "https://github.com/Mike2Abraham/LUNA---Clasificar"
   }
 }
