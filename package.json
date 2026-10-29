@@ -1,0 +1,12 @@
+{
+  "name": "luna-clasificador",
+  "version": "1.0.0",
+  "description": "Clasificador local de archivos multimedia (película / serie / variado)",
+  "main": "LUNA_clasificador.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "Abraham de Jesús Piñirí Megret",
+  "license": "MIT"
+}
