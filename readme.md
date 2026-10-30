@@ -886,3 +886,9 @@ El resultado es un nombre mucho más limpio, sin números de capítulos ni marca
 *   `serie_fansub_tag`: Detecta y acredita la presencia de tags de grupos de fansub al inicio del nombre (ej. `[D-SnF]`, `[SubsPlease]`), ayudando a una mejor limpieza y clasificación.
 
 > **Nota de compatibilidad:** El campo `nombreLimpio` ahora devuelve el nombre con mucha menos "basura" (sin capítulos pegados). Si estabas usando `nombreLimpio` para extraer el número de capítulo, ahora debés usar el campo `info.capituloNumero`.
+
+### Campos de `info` (v1.1.0)
+
+*   `nombreLimpio`: Nombre del archivo sin basura técnica (resoluciones, tags, etc.).
+*   `fechaExtra`: **(Nuevo)** Si el nombre original contenía una fecha entre corchetes o paréntesis (ej. `[15-10-2026]` o `[15/10/26]`), se extrae y se guarda en este campo con el formato `DD-MM-AAAA`.
+*   `tituloLimpio`: El título del episodio o saga, si estaba separado por un guion (ej. `Chicago PD - [El día...]`).

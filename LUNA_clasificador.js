@@ -297,7 +297,36 @@ async function clasificarPorBanderas(paquete) {
         }
     }
 }
+/**
+ * v1.1.0 — Extrae la fecha de emisión (ej. [15-10-2026]) y la limpia del nombre.
+ * Aplica para todos los esCC.
+ */
+function extraerYLimpiarFecha(archivo, nombreLimpio) {
+    if (!archivo.nombreOriginal) return { nombreLimpio, fechaExtra: null };
 
+    let fechaExtra = null;
+    let nuevoNombreLimpio = nombreLimpio;
+
+    // Busca formatos: [15-10-2026], [15/10/2026], [15\10\2026], (15-10-26) etc.
+    // Exige que esté entre corchetes o paréntesis.
+    const regexFecha = /[\[\(]\s*(\d{1,2})[-/\\](\d{1,2})[-/\\](\d{2,4})\s*[\]\)]/;
+    const match = archivo.nombreOriginal.match(regexFecha);
+
+    if (match) {
+        // Formateamos la fecha como string (ej. "15-10-2026")
+        fechaExtra = `${match[1]}-${match[2]}-${match[3]}`;
+
+        // Si el nombreLimpio actual contiene esa fecha (a veces el limpiador la deja),
+        // la borramos usando el mismo patrón (por si el limpiador convirtió los corchetes en espacios)
+        const regexFechaSuelta = new RegExp(`[\\[\\]\\(\\)\\s\\-\\/\\\\]*${match[1]}[-/\\\\]${match[2]}[-/\\\\]${match[3]}[\\[\\]\\(\\)\\s\\-\\/\\\\]*`, 'g');
+        
+        if (nuevoNombreLimpio) {
+            nuevoNombreLimpio = nuevoNombreLimpio.replace(regexFechaSuelta, ' ').replace(/\s+/g, ' ').trim();
+        }
+    }
+
+    return { nombreLimpio: nuevoNombreLimpio, fechaExtra };
+}
 /**
  * FIX C1 + M1
  * Deriva archivo.info y archivo.nombreLimpio a partir del reporte de banderas.
@@ -388,9 +417,14 @@ function enriquecerArchivoDesdeReporte(archivo, reporte) {
         nombreLimpio = null;
     }
 
+    // NUEVO: Extraer y limpiar fecha
+    const resultadoFecha = extraerYLimpiarFecha(archivo, nombreLimpio);
+    nombreLimpio = resultadoFecha.nombreLimpio;
+
     archivo.info = {
         nombreLimpio: nombreLimpio,
         tituloLimpio: tituloLimpio,
+        fechaExtra: resultadoFecha.fechaExtra,
         serie:        dSerie.nombreSerie || null,
         temporada:    (dSerie.temporada !== undefined ? dSerie.temporada : null),
         capituloNumero: (dSerie.capitulo !== undefined ? dSerie.capitulo : null),
@@ -977,6 +1011,7 @@ function transformarSalida(paquete) {
             nombreOriginal: archivo.nombreOriginal,
             nombreLimpio: archivo.nombreLimpio,
             tituloLimpio: archivo.info.tituloLimpio || null,
+            fechaExtra: archivo.info.fechaExtra || null,
             ruta: archivo.ruta,
             info: archivo.info,
             duracion: archivo.duracion,

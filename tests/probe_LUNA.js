@@ -19,14 +19,11 @@ const path = require('path');
 // Rutas reales. Corregidas las barras invertidas de la linea 3.
 const RUTAS_PRUEBA = [
     'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\Exatlon Mexico [T10] - [TX] [037].mp4',
-    'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\Exatlon Mexico [T10] - [TX] [037].mp4',
-    'D:\\ANIME\\Ciudad Lejana 137.mp4',
+    'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\La Novia - 107 [15-10-2026] [Corregido].mp4',
     'D:\\ANIME\\Code Geass 2\\[D-SnF] Code Geass - Lelouch of the Rebellion R2 - 11 [BD 1080p].mkv',
-    'D:\\ANIME\\Ciudad Lejana 139.mp4',
-    'D:\\ANIME\\Ciudad Lejana 138.mp4',
-    'D:\\ANIME\\Novela\\Ciudad Lejana 138.mp4',
-    'D:\\ANIME\\Novela\\Ciudad Lejana 139.mp4',
-    'D:\\ANIME\\Novela\\Ciudad Lejana 137.mp4',
+    'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\La Isla de Las Tentaciones [T11] - [Debate - 005].mp4',
+    'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\Dueña de Mi - 139 [16-10-2026].mp4',
+    'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\La Mujer Prohibida - 061 [FINAL].mp4',
 ];
 
 // ============================================================================
@@ -249,6 +246,7 @@ async function ejecutarProbeLUNA2() {
         console.log('     salida.esCC:', resultado && resultado.salida && resultado.salida.esCC);
         console.log('     salida.duracion:', resultado && resultado.salida && resultado.salida.duracion);
         console.log('     salida.nombreLimpio:', JSON.stringify(resultado && resultado.salida && resultado.salida.nombreLimpio));
+        console.log('     salida.FechaExtra:', JSON.stringify(resultado && resultado.salida && resultado.salida.fechaExtra));
         console.log('     salida.tituloLimpio:', JSON.stringify(resultado && resultado.salida && resultado.salida.tituloLimpio));
         if (resultado && resultado.salida && resultado.salida.info) {
             console.log('     salida.info.serie:', JSON.stringify(resultado.salida.info.serie));
