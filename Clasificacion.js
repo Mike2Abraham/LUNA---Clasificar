@@ -422,13 +422,17 @@ function serie_capitulo_texto(archivo) {
 function serie_capitulo_numero_suelto(archivo) {
     const nombreOrig = quitarExtension(archivo.nombreOriginal);
 
-    // Excluir contadores tipo "(1) [28-08-26]" o "(6) [30-08-26]" que son videos sueltos / animados variados,
-    // no capítulos de serie.
+    // Excluir contadores tipo "(1) [28-08-26]" o "(6) [30-08-26]"
     if (/\(\d{1,2}\)\s*\[[0-9]{2}-[0-9]{2}-[0-9]{2}\]$/.test(nombreOrig)) {
         return { puntos: {}, detecciones: {} };
     }
 
-    const match = nombreOrig.match(/^(.*?)[\s\-_]+(\d{1,4})$/);
+    // NUEVO: Quitar tags finales entre corchetes (ej: " - 061 [FINAL]", " - 139 [16-10-2026]")
+    // para que el número de capítulo quede al final.
+    const sinTagsFinales = nombreOrig.replace(/(\s*\[[^\]]*\])+\s*$/, '').trim();
+
+    // Ahora buscamos el número al final de la cadena limpia
+    const match = sinTagsFinales.match(/^(.*?)[\s\-_]+(\d{1,4})$/);
     if (!match) return { puntos: {}, detecciones: {} };
 
     const numeroStr = match[2];
@@ -522,7 +526,7 @@ function serie_capitulo_en_corchete(archivo) {
 function serie_capitulo_programa(archivo) {
     const nombreOrig = quitarExtension(archivo.nombreOriginal);
 
-    const match = nombreOrig.match(/\[\s*(?:programa|gala|concurso|emision|emisión)\s*[-._]?\s*(\d{1,4})\s*\]/i);
+    const match = nombreOrig.match(/\[\s*(?:programa|gala|concurso|emision|emisión|debate|especial)\s*[-._]?\s*(\d{1,4})\s*\]/i);
     if (!match) return { puntos: {}, detecciones: {} };
 
     const capitulo = parseInt(match[1]);
@@ -1520,7 +1524,7 @@ function peli_sin_patron_serie(archivo) {
     if (/\bt(?:emporada)?\s*\.?\s*\d{1,2}\b/i.test(nombre)) return { puntos: {}, detecciones: {} };
 
     // FIX I5: [Gala - N], [Programa - N], [Concurso - N] tambien son serie
-    if (/\[\s*(?:programa|gala|concurso|emision|emisión)\s*[-._]?\s*\d{1,4}\s*\]/i.test(nombreOrig)) {
+    if (/\[\s*(?:programa|gala|concurso|emision|emisión|debate|especial)\s*[-._]?\s*\d{1,4}\s*\]/i.test(nombreOrig)) {
         return { puntos: {}, detecciones: {} };
     }
     // FIX M4/I5: [Cap-N], [Ep-N] con _ o . tambien son serie
