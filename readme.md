@@ -861,3 +861,28 @@ Exatlon Mexico [T10] - [TX] [037].mp4               | esPROGRAM| 2530       | tr
 | **esCC**             | Etiqueta final: `esPELI`, `esSERIE`, `esPROGRAM`, `esNOVELA`, `esVARIADO`.             |
 | **Probe**            | Script de observación que **no modifica** nada.                                           |
 | **Enchufle**         | Singleton lazy que carga LUNA solo cuando se necesita.                                           |
+
+
+
+## 🆕 Novedades en v1.1.0
+
+Esta versión trae mejoras importantes en cómo LUNA limpia y estructura los nombres de los archivos, separando la información de la obra de la información del capítulo.
+
+### 1. Nuevo campo `tituloLimpio`
+Ahora LUNA es capaz de separar el nombre base (serie o película) de su título de capítulo/saga, usando el guion espaciado (` - `) como separador universal.
+
+Si el archivo dice: `Code Geass - Lelouch of the Rebellion R2 - 11.mkv`
+*   `nombreLimpio` será: `"Code Geass"`
+*   `tituloLimpio` será: `"Lelouch of the Rebellion R2"`
+
+**Regla de seguridad:** Si la parte después del guion es puramente un número (ej. `Ciudad Lejana - 137`), LUNA entiende que no es un título, sino un capítulo, y deja `tituloLimpio` en `null`.
+
+### 2. Limpieza profunda de metadatos
+Si LUNA detecta que un número o una temporada (como el `11` o el `R2` del ejemplo anterior) ya fueron identificados como `capituloNumero` o `temporada`, **los elimina automáticamente del `nombreLimpio`**. 
+El resultado es un nombre mucho más limpio, sin números de capítulos ni marcas de temporadas pegadas al final.
+
+### 3. Nuevas banderas de detección
+*   `serie_capitulo_guion_final`: Detecta capítulos al final del nombre con el formato `" - NN"`, ignorando los corchetes de calidad al final (ej. `[BD 1080p]`).
+*   `serie_fansub_tag`: Detecta y acredita la presencia de tags de grupos de fansub al inicio del nombre (ej. `[D-SnF]`, `[SubsPlease]`), ayudando a una mejor limpieza y clasificación.
+
+> **Nota de compatibilidad:** El campo `nombreLimpio` ahora devuelve el nombre con mucha menos "basura" (sin capítulos pegados). Si estabas usando `nombreLimpio` para extraer el número de capítulo, ahora debés usar el campo `info.capituloNumero`.

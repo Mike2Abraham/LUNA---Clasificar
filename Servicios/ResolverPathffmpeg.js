@@ -13,7 +13,7 @@ function getBaseDir() {
 }
 
 function buscarBinarioEnCarpeta(carpetaBase, nombreBinario) {
-    console.log(`[buscarBinarioEnCarpeta] Buscando "${nombreBinario}" en: ${carpetaBase}`);
+    //console.log(`[buscarBinarioEnCarpeta] Buscando "${nombreBinario}" en: ${carpetaBase}`);
     
     if (!carpetaBase || typeof carpetaBase !== 'string') {
         console.warn('[buscarBinarioEnCarpeta] carpetaBase inválida:', carpetaBase);
@@ -39,9 +39,9 @@ function buscarBinarioEnCarpeta(carpetaBase, nombreBinario) {
     
     for (const ruta of posiblesRutas) {
         const existe = fs.existsSync(ruta);
-        console.log(`[buscarBinarioEnCarpeta]   ${existe ? '✓' : '✗'} ${ruta}`);
+        //console.log(`[buscarBinarioEnCarpeta]   ${existe ? '✓' : '✗'} ${ruta}`);
         if (existe) {
-            console.log(`[buscarBinarioEnCarpeta] Encontrado: ${ruta}`);
+            //console.log(`[buscarBinarioEnCarpeta] Encontrado: ${ruta}`);
             return ruta;
         }
     }
@@ -69,27 +69,27 @@ function setBinariosFromFolder(carpetaBase) {
     
     if (mpegPath) {
         ffmpegPath = mpegPath;
-        console.log(`[setBinariosFromFolder] ffmpeg asignado: ${ffmpegPath}`);
+        //console.log(`[setBinariosFromFolder] ffmpeg asignado: ${ffmpegPath}`);
     } else {
         console.warn('[setBinariosFromFolder] ffmpeg NO encontrado');
     }
     
     if (probePath) {
         ffprobePath = probePath;
-        console.log(`[setBinariosFromFolder] ffprobe asignado: ${ffprobePath}`);
+       // console.log(`[setBinariosFromFolder] ffprobe asignado: ${ffprobePath}`);
     } else {
         console.warn('[setBinariosFromFolder] ffprobe NO encontrado');
     }
     
     if (playPath) {
         ffplayPath = playPath;
-        console.log(`[setBinariosFromFolder] ffplay asignado: ${ffplayPath}`);
+       // console.log(`[setBinariosFromFolder] ffplay asignado: ${ffplayPath}`);
     } else {
         console.warn('[setBinariosFromFolder] ffplay NO encontrado');
     }
     
     const resultado = mpegPath !== null;
-    console.log(`[setBinariosFromFolder] Resultado (ffmpeg encontrado): ${resultado}`);
+    //console.log(`[setBinariosFromFolder] Resultado (ffmpeg encontrado): ${resultado}`);
     return resultado;
 }
 
@@ -100,7 +100,7 @@ function detectSystemFFmpeg() {
             const whereOutput = execSync('where ffmpeg', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
             if (whereOutput) {
                 const paths = whereOutput.trim().split('\r\n');
-                console.log(`[detectSystemFFmpeg] Encontrado en sistema (win32): ${paths[0]}`);
+               // console.log(`[detectSystemFFmpeg] Encontrado en sistema (win32): ${paths[0]}`);
                 return paths[0];
             }
         } else {
@@ -123,7 +123,7 @@ function detectSystemFFprobe() {
             const whereOutput = execSync('where ffprobe', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
             if (whereOutput) {
                 const paths = whereOutput.trim().split('\r\n');
-                console.log(`[detectSystemFFprobe] Encontrado en sistema (win32): ${paths[0]}`);
+              //  console.log(`[detectSystemFFprobe] Encontrado en sistema (win32): ${paths[0]}`);
                 return paths[0];
             }
         } else {
@@ -223,9 +223,9 @@ function getFixedFFplayPath() {
 }
 
 function getFFmpegPath(userFolderPath = null) {
-    console.log('========================================');
-    console.log('[getFFmpegPath] Iniciando búsqueda de ffmpeg...');
-    console.log('[getFFmpegPath] ffmpegPath en caché:', ffmpegPath);
+    //console.log('========================================');
+    //console.log('[getFFmpegPath] Iniciando búsqueda de ffmpeg...');
+    //console.log('[getFFmpegPath] ffmpegPath en caché:', ffmpegPath);
     console.log('[getFFmpegPath] userFolderPath:', userFolderPath);
     
     if (ffmpegPath && !userFolderPath) {
@@ -234,32 +234,32 @@ function getFFmpegPath(userFolderPath = null) {
     }
     
     if (userFolderPath && typeof userFolderPath === 'string') {
-        console.log('[getFFmpegPath] Intentando setBinariosFromFolder...');
+        //console.log('[getFFmpegPath] Intentando setBinariosFromFolder...');
         if (setBinariosFromFolder(userFolderPath)) {
             console.log(`[getFFmpegPath] Encontrado en carpeta de usuario: ${ffmpegPath}`);
             return ffmpegPath;
         }
-        console.warn('[getFFmpegPath] No se encontró en carpeta de usuario, continuando...');
+        //console.warn('[getFFmpegPath] No se encontró en carpeta de usuario, continuando...');
     }
     
     const systemPath = detectSystemFFmpeg();
     if (systemPath) {
         ffmpegPath = systemPath;
-        console.log(`[getFFmpegPath] Usando ffmpeg del sistema: ${ffmpegPath}`);
+        //console.log(`[getFFmpegPath] Usando ffmpeg del sistema: ${ffmpegPath}`);
         return ffmpegPath;
     }
     
     const nodeModulesPath = detectNodeModulesFFmpeg();
     if (nodeModulesPath) {
         ffmpegPath = nodeModulesPath;
-        console.log(`[getFFmpegPath] Usando ffmpeg de node_modules: ${ffmpegPath}`);
+        //console.log(`[getFFmpegPath] Usando ffmpeg de node_modules: ${ffmpegPath}`);
         return ffmpegPath;
     }
     
     const fixedPath = getFixedFFmpegPath();
     if (fixedPath) {
         ffmpegPath = fixedPath;
-        console.log(`[getFFmpegPath] Usando ffmpeg de ruta fija: ${ffmpegPath}`);
+        //console.log(`[getFFmpegPath] Usando ffmpeg de ruta fija: ${ffmpegPath}`);
         return ffmpegPath;
     }
     
@@ -268,10 +268,10 @@ function getFFmpegPath(userFolderPath = null) {
 }
 
 function getFFprobePath(userFolderPath = null) {
-    console.log('========================================');
-    console.log('[getFFprobePath] Iniciando búsqueda de ffprobe...');
-    console.log('[getFFprobePath] ffprobePath en caché:', ffprobePath);
-    console.log('[getFFprobePath] userFolderPath:', userFolderPath);
+    //console.log('========================================');
+    //console.log('[getFFprobePath] Iniciando búsqueda de ffprobe...');
+    //console.log('[getFFprobePath] ffprobePath en caché:', ffprobePath);
+    //console.log('[getFFprobePath] userFolderPath:', userFolderPath);
     
     if (ffprobePath && !userFolderPath) {
         console.log(`[getFFprobePath] Usando caché: ${ffprobePath}`);
@@ -279,7 +279,7 @@ function getFFprobePath(userFolderPath = null) {
     }
     
     if (userFolderPath && typeof userFolderPath === 'string') {
-        console.log('[getFFprobePath] Intentando setBinariosFromFolder...');
+        //console.log('[getFFprobePath] Intentando setBinariosFromFolder...');
         setBinariosFromFolder(userFolderPath);
         if (ffprobePath) {
             console.log(`[getFFprobePath] Encontrado en carpeta de usuario: ${ffprobePath}`);
@@ -314,21 +314,21 @@ function getFFprobePath(userFolderPath = null) {
 }
 
 function getFFplayPath(userFolderPath = null) {
-    console.log('========================================');
-    console.log('[getFFplayPath] Iniciando búsqueda de ffplay...');
-    console.log('[getFFplayPath] ffplayPath en caché:', ffplayPath);
-    console.log('[getFFplayPath] userFolderPath:', userFolderPath);
+    //console.log('========================================');
+    //console.log('[getFFplayPath] Iniciando búsqueda de ffplay...');
+    //console.log('[getFFplayPath] ffplayPath en caché:', ffplayPath);
+    //console.log('[getFFplayPath] userFolderPath:', userFolderPath);
     
     if (ffplayPath && !userFolderPath) {
-        console.log(`[getFFplayPath] Usando caché: ${ffplayPath}`);
+        //console.log(`[getFFplayPath] Usando caché: ${ffplayPath}`);
         return ffplayPath;
     }
     
     if (userFolderPath && typeof userFolderPath === 'string') {
-        console.log('[getFFplayPath] Intentando setBinariosFromFolder...');
+        //console.log('[getFFplayPath] Intentando setBinariosFromFolder...');
         setBinariosFromFolder(userFolderPath);
         if (ffplayPath) {
-            console.log(`[getFFplayPath] Encontrado en carpeta de usuario: ${ffplayPath}`);
+            //console.log(`[getFFplayPath] Encontrado en carpeta de usuario: ${ffplayPath}`);
             return ffplayPath;
         }
         console.warn('[getFFplayPath] No se encontró en carpeta de usuario, continuando...');

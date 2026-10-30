@@ -2007,6 +2007,11 @@ const BANDERAS_SERIE_SINCRONAS = [
     serie_ruta_pista_debil,
     // --- Duracion + idioma ---
     serie_duracion,
+
+        // --- v1.1.0: nuevos ---
+    serie_capitulo_guion_final,   // " - NN" al final, ignorando tags finales
+    serie_fansub_tag,             // "[D-SnF]" al inicio
+
     serie_idioma_marca
 ];
 
@@ -2093,7 +2098,6 @@ function ejecutarBanderasSincronas(banderas, archivo, categoria) {
 
     return { puntos: puntosTotales, detecciones, banderasQueSumaron };
 }
-
 
 async function ejecutarBanderasAsincronasCompartidas(banderas, archivo, contexto) {
     let puntosSerie = 0;

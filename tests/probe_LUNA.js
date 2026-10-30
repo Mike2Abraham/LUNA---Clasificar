@@ -21,6 +21,7 @@ const RUTAS_PRUEBA = [
     'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\Exatlon Mexico [T10] - [TX] [037].mp4',
     'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\Exatlon Mexico [T10] - [TX] [037].mp4',
     'D:\\ANIME\\Ciudad Lejana 137.mp4',
+    'D:\\ANIME\\Code Geass 2\\[D-SnF] Code Geass - Lelouch of the Rebellion R2 - 11 [BD 1080p].mkv',
     'D:\\ANIME\\Ciudad Lejana 139.mp4',
     'D:\\ANIME\\Ciudad Lejana 138.mp4',
     'D:\\ANIME\\Novela\\Ciudad Lejana 138.mp4',
@@ -244,19 +245,20 @@ async function ejecutarProbeLUNA2() {
 
         // Reporte de puntajes por archivo desde el paquete interno
         // No lo tenemos en resultado, asi que solo imprimimos salida y errores
-        //console.log('     exito:', resultado && resultado.exito);
-        //console.log('     salida.esCC:', resultado && resultado.salida && resultado.salida.esCC);
-        //console.log('     salida.duracion:', resultado && resultado.salida && resultado.salida.duracion);
-        //console.log('     salida.nombreLimpio:', JSON.stringify(resultado && resultado.salida && resultado.salida.nombreLimpio));
-        //if (resultado && resultado.salida && resultado.salida.info) {
-        //    console.log('     salida.info.serie:', JSON.stringify(resultado.salida.info.serie));
-        //    console.log('     salida.info.temporada:', resultado.salida.info.temporada);
-        //    console.log('     salida.info.capituloNumero:', resultado.salida.info.capituloNumero);
-        //}
-        //if (resultado && Array.isArray(resultado.errores) && resultado.errores.length > 0) {
-        //    console.log('     errores:');
-        //    resultado.errores.forEach(e => console.log(`       - [${e.etapa}] ${e.mensaje}`));
-        //}
+        console.log('     exito:', resultado && resultado.exito);
+        console.log('     salida.esCC:', resultado && resultado.salida && resultado.salida.esCC);
+        console.log('     salida.duracion:', resultado && resultado.salida && resultado.salida.duracion);
+        console.log('     salida.nombreLimpio:', JSON.stringify(resultado && resultado.salida && resultado.salida.nombreLimpio));
+        console.log('     salida.tituloLimpio:', JSON.stringify(resultado && resultado.salida && resultado.salida.tituloLimpio));
+        if (resultado && resultado.salida && resultado.salida.info) {
+            console.log('     salida.info.serie:', JSON.stringify(resultado.salida.info.serie));
+            console.log('     salida.info.temporada:', resultado.salida.info.temporada);
+            console.log('     salida.info.capituloNumero:', resultado.salida.info.capituloNumero);
+        }
+        if (resultado && Array.isArray(resultado.errores) && resultado.errores.length > 0) {
+            console.log('     errores:');
+            resultado.errores.forEach(e => console.log(`       - [${e.etapa}] ${e.mensaje}`));
+        }
 
         resumen.push({
             archivo: path.basename(ruta),

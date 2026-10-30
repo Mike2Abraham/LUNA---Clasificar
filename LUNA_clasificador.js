@@ -23,7 +23,7 @@ var seEjecutoIPC = false;
 //////////////////////////////// [RUTA DEL BINARIO DE FFMPEG] //////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//setBinariosFromFolder('D:\\NAtifevierddd\\ffmpeg-static'); //cambialo a merced ej: D:\\NAtifevierddd\\ffmpeg-static\\
+setBinariosFromFolder('D:\\NAtifevierddd\\ffmpeg-static'); //cambialo a merced ej: D:\\NAtifevierddd\\ffmpeg-static\\
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -333,36 +333,55 @@ function enriquecerArchivoDesdeReporte(archivo, reporte) {
 
     const puntajeDeteccion = Math.max(pSerie, pPeli, pVari);
 
-    // ¿El nombre del archivo tiene contenido propio? (no es solo "33", "Ep 5", "Cap-2")
+    // ¿El nombre del archivo tiene contenido propio?
     const baseSinExt = String(archivo.nombreOriginal).replace(/\.[a-z0-9]{2,5}$/i, '').trim();
     const archivoTieneNombrePropio = /[a-záéíóúñü]{3,}/i.test(baseSinExt)
         && !/^(?:cap|capitulo|capítulo|ep|episodio|episode|video|clip)\b/i.test(baseSinExt);
 
-    // nombreLimpio: SIEMPRE intentar desde el archivo primero.
-    // Solo caer a lo que dijo la bandera (carpeta) si el archivo NO tiene nombre propio.
     let nombreLimpio = null;
+    let tituloLimpio = null;
+
     try {
-        if (archivoTieneNombrePropio) {
-            // El archivo manda: limpiar su propio nombre
-            if (ganadora === 'pelicula') {
-                const r = Clasificador.limpiarNombrePelicula(archivo.nombreOriginal);
-                nombreLimpio = r.nombreLimpio || null;
-            } else {
-                const r = Clasificador.limpiarNombreSerieAvanzado(archivo.nombreOriginal);
-                nombreLimpio = r.nombreLimpio || null;
+        // 1. Intentar separar Título del nombre original (solo si es serie o peli)
+        if (ganadora === 'serie' || ganadora === 'pelicula') {
+            const nombreOriginalSinExt = String(archivo.nombreOriginal).replace(/\.[a-z0-9]{2,5}$/i, '');
+            
+            const separado = separarTituloYNombre(nombreOriginalSinExt);
+            
+            if (separado.tituloLimpio) {
+                tituloLimpio = separado.tituloLimpio;
+                // Si separamos, limpiamos la Parte A (el nombre base)
+                const r = (ganadora === 'pelicula') 
+                    ? Clasificador.limpiarNombrePelicula(separado.nombreBase)
+                    : Clasificador.limpiarNombreSerieAvanzado(separado.nombreBase);
+                
+                if (r.nombreLimpio) {
+                    nombreLimpio = r.nombreLimpio;
+                }
             }
-            // Si por lo que sea el limpiador no devolvió nada, caer al de la bandera
-            if (!nombreLimpio && dSerie.nombreSerie) nombreLimpio = dSerie.nombreSerie;
-        } else {
-            // Archivo sin nombre propio ("33.mp4", "Ep 5.mp4"): usar lo que dijo la carpeta
-            if (ganadora === 'serie' && dSerie.nombreSerie) {
-                nombreLimpio = dSerie.nombreSerie;
-            } else if (ganadora === 'pelicula') {
-                const r = Clasificador.limpiarNombrePelicula(archivo.nombreOriginal);
-                nombreLimpio = r.nombreLimpio || null;
+        }
+
+        // 2. Si no hubo separación, o el limpiador de la Parte A falló, limpiamos el original completo
+        if (!nombreLimpio) {
+            if (archivoTieneNombrePropio) {
+                if (ganadora === 'pelicula') {
+                    const r = Clasificador.limpiarNombrePelicula(archivo.nombreOriginal);
+                    nombreLimpio = r.nombreLimpio || null;
+                } else {
+                    const r = Clasificador.limpiarNombreSerieAvanzado(archivo.nombreOriginal);
+                    nombreLimpio = r.nombreLimpio || null;
+                }
+                if (!nombreLimpio && dSerie.nombreSerie) nombreLimpio = dSerie.nombreSerie;
             } else {
-                const r = Clasificador.limpiarNombreSerieAvanzado(archivo.nombreOriginal);
-                nombreLimpio = r.nombreLimpio || null;
+                if (ganadora === 'serie' && dSerie.nombreSerie) {
+                    nombreLimpio = dSerie.nombreSerie;
+                } else if (ganadora === 'pelicula') {
+                    const r = Clasificador.limpiarNombrePelicula(archivo.nombreOriginal);
+                    nombreLimpio = r.nombreLimpio || null;
+                } else {
+                    const r = Clasificador.limpiarNombreSerieAvanzado(archivo.nombreOriginal);
+                    nombreLimpio = r.nombreLimpio || null;
+                }
             }
         }
     } catch (e) {
@@ -371,6 +390,7 @@ function enriquecerArchivoDesdeReporte(archivo, reporte) {
 
     archivo.info = {
         nombreLimpio: nombreLimpio,
+        tituloLimpio: tituloLimpio,
         serie:        dSerie.nombreSerie || null,
         temporada:    (dSerie.temporada !== undefined ? dSerie.temporada : null),
         capituloNumero: (dSerie.capitulo !== undefined ? dSerie.capitulo : null),
@@ -381,7 +401,115 @@ function enriquecerArchivoDesdeReporte(archivo, reporte) {
     };
 
     archivo.nombreLimpio = nombreLimpio;
+
+    // Refinar (quitar cap/temp sobrantes del nombreLimpio)
+    refinarNombreLimpio(archivo);
 }
+
+/**
+ * v1.1.0 — Refina el nombreLimpio quitando el capítulo y la temporada
+ * que YA fueron detectados en info.
+ * 
+ * REGLA DE ORO: Si las banderas usaron ese texto para detectar cap/temp,
+ * ese texto NO debe quedar en el nombreLimpio final.
+ * 
+ * Aplica SOLO para categorías de serie (serie, programa, novela).
+ */
+function refinarNombreLimpio(archivo) {
+    // 1. Solo si hay info y nombreLimpio
+    if (!archivo.info || !archivo.info.nombreLimpio) return;
+    
+    // 2. Solo para categorías que manejan capítulos/temporadas
+    const cat = archivo.info.categoriaGanadora;
+    if (cat !== 'serie' && cat !== 'programa' && cat !== 'novela') return;
+
+    let limpio = archivo.info.nombreLimpio;
+
+    // 3. Quitar capítulo al final (ej: " 11" o " - 11" o " 011")
+    const cap = archivo.info.capituloNumero;
+    if (cap !== null && cap !== undefined) {
+        // Captura separadores (espacio o guion) + el número + fin de string
+        const reCap = new RegExp(`[\\s\\-]+0*${cap}$`, 'i');
+        if (reCap.test(limpio)) {
+            limpio = limpio.replace(reCap, '');
+        }
+    }
+
+    // 4. Quitar temporada al final (ej: " R2", " Temp 2", " Temporada 2", " T2", " S02")
+    const temp = archivo.info.temporada;
+    if (temp !== null && temp !== undefined) {
+        // Intenta R2
+        const reR = new RegExp(`[\\s\\-]+R${temp}$`, 'i');
+        if (reR.test(limpio)) limpio = limpio.replace(reR, '');
+
+        // Intenta Temp 2 / T2 / Temporada 2 / S02
+        const reTemp = new RegExp(`[\\s\\-]+(?:T|Temp|Temporada|Season|S)\\s*0*${temp}$`, 'i');
+        if (reTemp.test(limpio)) limpio = limpio.replace(reTemp, '');
+    }
+
+    // 5. Limpiar espacios y guiones colgantes al final (ej: "Title -" -> "Title")
+    limpio = limpio.replace(/[\s\-]+$/, '').trim();
+
+    // 6. Actualizar ambos campos
+    archivo.info.nombreLimpio = limpio;
+    archivo.nombreLimpio = limpio;
+}
+
+/**
+ * v1.2.0 — Separa el nombre de la serie/peli de su título.
+ * Regla universal: el separador es " - " (guion con espacios).
+ * El nombre base (ParteA) siempre es lo que está antes del PRIMER " - ".
+ * El título (ParteB) es lo que queda después del primer " - ", pero
+ * se descartan los números puros (capítulos) que aparezcan sueltos.
+ */
+function separarTituloYNombre(nombreOriginalSinExt) {
+    // 1. Quitar tags finales tipo [BD 1080p] para que no confundan
+    const sinTagsFinales = nombreOriginalSinExt
+        .replace(/(\s*[\[\(][^\]\)]*[\]\)])+\s*$/, '')
+        .trim();
+
+    // 2. Buscar el PRIMER " - " (guion con espacios)
+    const primerGuion = sinTagsFinales.indexOf(' - ');
+    
+    // Si no hay guion, no hay nada que separar
+    if (primerGuion === -1) {
+        return { nombreBase: nombreOriginalSinExt, tituloLimpio: null };
+    }
+
+    // 3. Parte A: Todo antes del primer guion
+    const parteA = sinTagsFinales.substring(0, primerGuion).trim();
+    
+    // 4. Parte B: Todo después del primer guion
+    let parteB = sinTagsFinales.substring(primerGuion + 3).trim();
+
+    // 5. De la Parte B, eliminar los números sueltos (capítulos).
+    //    Ej: "05 - [El día...]" -> quitamos "05 - " -> "[El día...]"
+    //    Ej: "[El día...] - 05" -> quitamos " - 05" -> "[El día...]"
+    //    Ej: "137" -> quitamos -> "" (vacío)
+    
+    // Eliminar al principio si es un número seguido de " - "
+    parteB = parteB.replace(/^\d{1,4}\s+-\s+/, '');
+    
+    // Eliminar al final si es " - " seguido de un número
+    parteB = parteB.replace(/\s+-\s+\d{1,4}$/, '');
+    
+    // Si la ParteB entera es solo un número, se vacía
+    if (/^\d{1,4}$/.test(parteB)) {
+        parteB = '';
+    }
+
+    // 6. Limpiar corchetes/paréntesis sobrantes en el título
+    parteB = parteB.replace(/^[\[\{\(]|[\]\}\)]$/g, '').trim();
+
+    // 7. Si la Parte B quedó vacía (era solo número), devolvemos null
+    if (!parteB) {
+        return { nombreBase: nombreOriginalSinExt, tituloLimpio: null };
+    }
+
+    return { nombreBase: parteA, tituloLimpio: parteB };
+}
+
+
 // ============================================================================
 // DB DE NOMBRES CONOCIDOS (luna_db.json)
 // ----------------------------------------------------------------------------
@@ -848,6 +976,7 @@ function transformarSalida(paquete) {
         return {
             nombreOriginal: archivo.nombreOriginal,
             nombreLimpio: archivo.nombreLimpio,
+            tituloLimpio: archivo.info.tituloLimpio || null,
             ruta: archivo.ruta,
             info: archivo.info,
             duracion: archivo.duracion,
@@ -894,6 +1023,7 @@ module.exports = {
     infoDBMetadata,
     LUNAVersion,
     cargarDB,
+    refinarNombreLimpio,
 
     setBinariosFromFolder,
     // Exportada por si necesitas testear el enriquecimiento por separado
