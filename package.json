@@ -1,13 +1,14 @@
 {
   "name": "luna-clasificador",
-  "version": "1.0.1",
+  "version": "1.0.5",
   "description": "Clasificador local de archivos multimedia (película, serie, variado, programa, novela)",
-  "main": "LUNA_clasificador.js",
+  "main": "LUNA.js",
   "files": [
     "LUNA_clasificador.js",
     "Clasificacion.js",
-    "LUNA_Logger.js",
-    "luna_enchufle.js",
+    "Debug/LUNA_Logger.js",
+    "tests/probe_LUNA.js",
+    "LUNA.js",
     "Servicios/ProcesosCore.js",
     "Servicios/ResolverPathffmpeg.js",
     "BD/luna_db.json"

@@ -82,7 +82,11 @@ const PESOS_SERIE = {
     investigar_consecutivo_fuerte: 60,
     investigar_consecutivo_debil:  20,
     investigar_muchos_hermanos:    25,
-    investigar_nombres_serie:      40
+    investigar_nombres_serie:      40,
+
+    // --- v1.1.0: casos anime / releases con tags ---
+    capitulo_guion_final:       40,   // "Code Geass R2 - 03 [BD 1080p]" -> cap 3
+    fansub_tag:                 25,   // "[D-SnF]", "[SubsPlease]", "[Erai-raws]"
 };
 
 
@@ -544,6 +548,152 @@ function serie_capitulo_programa(archivo) {
     };
 }
 
+
+/**
+ * v1.1.0 — Bandera NUEVA (no reemplaza a serie_capitulo_numero_suelto).
+ * Detecta capítulo al final con formato " - NN" (guion + número),
+ * IGNORANDO los corchetes finales tipo [BD 1080p], [1080p], [Sub].
+ *
+ * Casos que cubre:
+ *   "[D-SnF] Code Geass - Lelouch of the Rebellion R2 - 03 [BD 1080p].mkv"
+ *     -> capitulo: 3
+ *   "Nombre de Serie - 12 [1080p].mkv"
+ *     -> capitulo: 12
+ *   "Otra Serie - 005 [BD].mkv"
+ *     -> capitulo: 5
+ *
+ * NO cubre (a propósito, los cubre serie_capitulo_numero_suelto):
+ *   "Serie 137.mp4" (sin guion, sin tags finales)
+ *
+ * NO toca ninguna bandera existente.
+ */
+function serie_capitulo_guion_final(archivo) {
+    const nombreOrig = quitarExtension(archivo.nombreOriginal);
+
+    // 1. Quitar corchetes/paréntesis finales (tags tipo [BD 1080p], [Sub], (1080p))
+    //    Solo los del FINAL, para no perder información del medio.
+    const sinTagsFinales = nombreOrig
+        .replace(/(\s*[\[\(][^\]\)]*[\]\)])+\s*$/, '')
+        .trim();
+
+    if (!sinTagsFinales) return { puntos: {}, detecciones: {} };
+
+    // 2. Buscar " - NN" al final (guion normal, en-dash o em-dash)
+    const match = sinTagsFinales.match(/\s[-–—]\s(\d{1,4})\s*$/);
+    if (!match) return { puntos: {}, detecciones: {} };
+
+    const capitulo = parseInt(match[1]);
+
+    // 3. Guard: rechazar años (1900-2099) — esos son de peli, no de capítulo
+    if (capitulo >= 1900 && capitulo <= 2099) {
+        return { puntos: {}, detecciones: {} };
+    }
+
+    // 4. Guard: rechazar números absurdos
+    if (capitulo < 1 || capitulo > 9999) {
+        return { puntos: {}, detecciones: {} };
+    }
+
+    // 5. Extraer nombreSerie: todo lo que está antes del " - NN"
+    const posicionMatch = sinTagsFinales.lastIndexOf(match[0]);
+    let nombreSerie = null;
+    if (posicionMatch > 0) {
+        const bruto = sinTagsFinales.substring(0, posicionMatch);
+        nombreSerie = limpiarNombreSerieAvanzado(bruto).nombreLimpio;
+    }
+    if (!nombreSerie) {
+        nombreSerie = nombreDesdeCarpetaPadre(archivo.ruta);
+    }
+
+    return {
+        puntos: { serie: PESOS_SERIE.capitulo_guion_final },
+        detecciones: {
+            temporada: null,
+            capitulo,
+            nombreSerie,
+            patron: 'capitulo_guion_final'
+        }
+    };
+}
+
+/**
+ * v1.1.0 — Bandera NUEVA.
+ * Detecta tag de fansub al INICIO del nombre: "[D-SnF]", "[SubsPlease]", etc.
+ *
+ * Es señal fuerte de anime/serie. Suma a serie.
+ *
+ * Casos que cubre:
+ *   "[D-SnF] Code Geass - ..."
+ *   "[SubsPlease] Nombre - 03.mkv"
+ *   "[Erai-raws] Otra Serie - 12.mkv"
+ *
+ * NO cubre tags genéricos como [HD], [1080p], [Sub] — esos no son fansub.
+ * Solo matchea tags al INICIO (posición 0), no en el medio.
+ *
+ * NO toca ninguna bandera existente.
+ */
+function serie_fansub_tag(archivo) {
+    const nombreOrig = quitarExtension(archivo.nombreOriginal).trim();
+
+    // 1. Solo el PRIMER corchete, y solo si está al inicio del nombre
+    const match = nombreOrig.match(/^\[([^\]]+)\]/);
+    if (!match) return { puntos: {}, detecciones: {} };
+
+    const tag = match[1].trim();
+    if (!tag) return { puntos: {}, detecciones: {} };
+
+    // 2. Lista de tags que NO son fansub (evitar falsos positivos)
+    const tagsNoFansub = [
+        /^\d{3,4}p$/i,           // 1080p, 720p, 480p
+        /^\d{3,4}i$/i,           // 1080i
+        /^4k$/i,
+        /^8k$/i,
+        /^uhd$/i,
+        /^hdr/i,
+        /^bd$/i,                 // [BD] suelto
+        /^bluray$/i,
+        /^web-?dl$/i,
+        /^webrip$/i,
+        /^hd$/i,
+        /^sd$/i,
+        /^sub$/i,
+        /^subs$/i,
+        /^dual$/i,
+        /^latino$/i,
+        /^castellano$/i,
+        /^espa[ñn]ol$/i,
+        /^ingles$/i,
+        /^english$/i,
+        /^x264$/i,
+        /^x265$/i,
+        /^hevc$/i,
+        /^aac$/i,
+        /^ac3$/i,
+        /^dts$/i,
+        /^(?:19|20)\d{2}$/,      // [2024], [2019]
+        /^\d{1,2}$/,             // [1], [12] — números sueltos
+        /^[tx]$/i,               // [TX]
+    ];
+
+    for (const re of tagsNoFansub) {
+        if (re.test(tag)) {
+            return { puntos: {}, detecciones: {} };
+        }
+    }
+
+    // 3. Tiene que tener al menos una letra (evitar [123], [---])
+    if (!/[a-z]/i.test(tag)) {
+        return { puntos: {}, detecciones: {} };
+    }
+
+    return {
+        puntos: { serie: PESOS_SERIE.fansub_tag },
+        detecciones: {
+            fansub: tag,
+            patron: 'fansub_tag'
+        }
+    };
+}
 
 /**
  * FIX I3: se acota el T generico para no matchear "Part T3" ni similares.
@@ -1062,6 +1212,20 @@ function limpiarNombreSerieAvanzado(nombreOriginal) {
     limpio = limpio.replace(/\b[Ss]eason\b/gi, ' ');
     limpio = limpio.replace(/\b[Tt](?:emporada|emp)\b/gi, ' ');
 
+    // 15b. v1.1.0: eliminar tag de fansub al INICIO si está entre corchetes
+    //      y no es un tag técnico (1080p, BD, etc.)
+    //      Caso: "[D-SnF] Code Geass..." -> "Code Geass..."
+    limpio = limpio.replace(
+        /^\[([^\]]+)\]\s*/,
+        (matchCompleto, contenido) => {
+            const c = contenido.trim();
+            const tagsTecnicos = /^(?:\d{3,4}[pi]|4k|8k|uhd|hdr.*|bd|bluray|web-?dl|webrip|hd|sd|sub|subs|dual|latino|castellano|espa[ñn]ol|ingles|english|x26[45]|hevc|aac|ac3|dts|(?:19|20)\d{2}|\d{1,2}|[tx])$/i;
+            if (tagsTecnicos.test(c) || !/[a-z]/i.test(c)) {
+                return matchCompleto; // dejar el tag técnico tal cual (lo limpia otro paso)
+            }
+            return ''; // era fansub: eliminarlo
+        }
+    );
     // 6. Eliminar anio del texto (ya extraido)
     if (anio) {
         limpio = limpio.replace(new RegExp(`\\b${anio}\\b`, 'g'), ' ');
