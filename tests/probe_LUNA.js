@@ -24,6 +24,7 @@ const RUTAS_PRUEBA = [
     'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\La Isla de Las Tentaciones [T11] - [Debate - 005].mp4',
     'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\Dueña de Mi - 139 [16-10-2026].mp4',
     'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\La Mujer Prohibida - 061 [FINAL].mp4',
+    'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\#Zombie Sagashitemasu 3 Sub Español Online gratis — JkAnime.mp4',
 ];
 
 // ============================================================================

@@ -14,7 +14,7 @@ const path = require('path');
 const { setBinariosFromFolder, procesarDuracionMediainfo } = require('./Servicios/ProcesosCore.js');
 const Clasificador = require('./Clasificacion.js');
 const { guardarLogDebug } = require('./Debug/LUNA_Logger.js');
-const VERSION_LUNA = '1.0.0';
+const VERSION_LUNA = '1.1.0';
 var seEjecuto = false;
 var seEjecutoIPC = false;
 
