@@ -752,7 +752,7 @@ function tomarDecision(paquete) {
             const pPeli  = (rep.pelicula && rep.pelicula.puntos) || 0;
             const pSerie = (rep.serie    && rep.serie.puntos)    || 0;
             let pVari  = (rep.variado  && rep.variado.puntos)  || 0;
-
+            let pPeliFinal = pPeli;
             let elegido = null;
 
                         // === NUEVO: Chequeo de DB para VARIADO (350 puntos) ===
@@ -787,6 +787,35 @@ function tomarDecision(paquete) {
                 });
             }
 
+                        // === NUEVO: Chequeo de DB para PELICULA (350 puntos) ===
+            let esPeliDB = false;
+            try {
+                const db = cargarDB();
+                if (db && archivo.info && archivo.info.nombreLimpio) {
+                    const matchDB = buscarEnCategoriaDB(db, archivo.info.nombreLimpio, 'pelicula');
+                    if (matchDB) {
+                        pPeliFinal += 350; // <-- Le sumamos a la variable nueva
+                        esPeliDB = true;
+                        
+                        archivo.info.DBmetadata = {
+                            fuente: db.fuente || null,
+                            version: db.version || null,
+                            categoriaDB: 'pelicula',
+                            nombreOficial: matchDB.nombreOficial,
+                            viaAlias: !!matchDB.viaAlias,
+                            viaPrefijo: !!matchDB.viaPrefijo
+                        };
+                    }
+                }
+            } catch (e) {
+                paquete.errores.push({
+                    etapa: 'tomarDecision.dbPeli',
+                    ruta: archivo.ruta,
+                    mensaje: e.message
+                });
+            }
+
+
             if (pPeli > pSerie && pPeli > pVari) elegido = 'esPELI';
             else if (pSerie > pPeli && pSerie > pVari) elegido = 'esSERIE';
             else if (pVari > pPeli && pVari > pSerie) elegido = 'esVARIADO';
@@ -805,6 +834,17 @@ function tomarDecision(paquete) {
                 }
             }
 
+                        // NUEVO: Si la DB lo marcó como película, forzamos.
+            if (esPeliDB) {
+                elegido = 'esPELI';
+                if (archivo.info) {
+                    archivo.info.serie = null;
+                    archivo.info.temporada = null;
+                    archivo.info.capituloNumero = null;
+                    archivo.info.esEstructuraSerie = false;
+                }
+            }
+            
             // Desempate / todo cero
             if (elegido === null) {
                 // FIX C4: primero mirar las detecciones concretas de banderas
