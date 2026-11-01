@@ -892,3 +892,7 @@ El resultado es un nombre mucho más limpio, sin números de capítulos ni marca
 *   `nombreLimpio`: Nombre del archivo sin basura técnica (resoluciones, tags, etc.).
 *   `fechaExtra`: **(Nuevo)** Si el nombre original contenía una fecha entre corchetes o paréntesis (ej. `[15-10-2026]` o `[15/10/26]`), se extrae y se guarda en este campo con el formato `DD-MM-AAAA`.
 *   `tituloLimpio`: El título del episodio o saga, si estaba separado por un guion (ej. `Chicago PD - [El día...]`).
+
+### Categorización por Base de Datos (v1.1.1)
+Si un archivo coincide con la categoría "variado" de `luna_db.json`, LUNA le asigna 350 puntos a la categoría `esVARIADO`. 
+Esto garantiza que los dibujos animados o clips catalogados manualmente nunca sean clasificados erróneamente como series o películas por las banderas de heurística.

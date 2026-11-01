@@ -14,7 +14,7 @@ const path = require('path');
 const { setBinariosFromFolder, procesarDuracionMediainfo } = require('./Servicios/ProcesosCore.js');
 const Clasificador = require('./Clasificacion.js');
 const { guardarLogDebug } = require('./Debug/LUNA_Logger.js');
-const VERSION_LUNA = '1.1.0';
+const VERSION_LUNA = '1.1.1';
 var seEjecuto = false;
 var seEjecutoIPC = false;
 
@@ -751,13 +751,50 @@ function tomarDecision(paquete) {
 
             const pPeli  = (rep.pelicula && rep.pelicula.puntos) || 0;
             const pSerie = (rep.serie    && rep.serie.puntos)    || 0;
-            const pVari  = (rep.variado  && rep.variado.puntos)  || 0;
+            let pVari  = (rep.variado  && rep.variado.puntos)  || 0;
 
             let elegido = null;
+
+                        // === NUEVO: Chequeo de DB para VARIADO (350 puntos) ===
+            let esVariadoDB = false;
+            try {
+                const db = cargarDB();
+                if (db && archivo.info && archivo.info.nombreLimpio) {
+                    // Usamos la misma función de búsqueda, pero en la categoría 'variado'
+                    const matchDB = buscarEnCategoriaDB(db, archivo.info.nombreLimpio, 'variado');
+                    if (matchDB) {
+                        // Si la DB dice que es variado, le damos 350 puntos.
+                        pVari += 350; 
+                        esVariadoDB = true;
+                        
+                        // Guardamos la metadata para que el usuario sepa por qué
+                        archivo.info.DBmetadata = {
+                            fuente: db.fuente || null,
+                            version: db.version || null,
+                            categoriaDB: 'variado',
+                            nombreOficial: matchDB.nombreOficial,
+                            viaAlias: !!matchDB.viaAlias,
+                            viaPrefijo: !!matchDB.viaPrefijo
+                        };
+                    }
+                }
+            } catch (e) {
+                // Si falla la DB, no rompemos el pipeline
+                paquete.errores.push({
+                    etapa: 'tomarDecision.dbVariado',
+                    ruta: archivo.ruta,
+                    mensaje: e.message
+                });
+            }
 
             if (pPeli > pSerie && pPeli > pVari) elegido = 'esPELI';
             else if (pSerie > pPeli && pSerie > pVari) elegido = 'esSERIE';
             else if (pVari > pPeli && pVari > pSerie) elegido = 'esVARIADO';
+
+            // NUEVO: Si la DB lo marcó como variado, forzamos la decisión.
+            if (esVariadoDB) {
+                elegido = 'esVARIADO';
+            }
 
             // Desempate / todo cero
             if (elegido === null) {

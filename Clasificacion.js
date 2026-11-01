@@ -1039,6 +1039,10 @@ function limpiarNombrePelicula(nombreOriginal) {
     // 4. Eliminar cualquier otro parentesis (ya no contienen anio)
     limpio = limpio.replace(/\([^)]*\)/g, ' ');
 
+        // NUEVO: Eliminar paréntesis de números sueltos o fechas 
+    limpio = limpio.replace(/\(\s*\d{1,4}\s*\)/g, ' ');
+    limpio = limpio.replace(/\(\s*\d{1,2}[-/\\]\d{1,2}[-/\\]\d{2,4}\s*\)/g, ' ');
+
     // 5. Normalizar separadores
     limpio = limpio.replace(/[_\-+=]+/g, ' ');
     limpio = limpio.replace(/\./g, ' ');
@@ -1201,6 +1205,11 @@ function limpiarNombreSerieAvanzado(nombreOriginal) {
     // 3. Eliminar corchetes y llaves completos (tags)
     limpio = limpio.replace(/\[[^\]]*\]/g, ' ');
     limpio = limpio.replace(/\{[^\}]*\}/g, ' ');
+
+    // NUEVO 3.5: Eliminar paréntesis que solo contienen números o fechas
+    // (Ej: "Peppa Pig (1)" -> "Peppa Pig", "Bluey (08-10-26)" -> "Bluey")
+    limpio = limpio.replace(/\(\s*\d{1,4}\s*\)/g, ' ');
+    limpio = limpio.replace(/\(\s*\d{1,2}[-/\\]\d{1,2}[-/\\]\d{2,4}\s*\)/g, ' ');
 
     // 4. Eliminar parentesis que ya no contienen anio (o cualquier otro)
     limpio = limpio.replace(/\([^)]*\)/g, ' ');
