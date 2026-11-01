@@ -1356,7 +1356,72 @@ function peli_secuela_romano(archivo) {
     };
 }
 
+/**
+ * v1.2.0 — Extrae información de saga/franquicia.
+ * Detecta patrones como "Nombre de Saga 2" o "Saga - Parte 3".
+ * Devuelve { saga, entrega } o null.
+ */
+function extraerInfoSaga(nombreLimpio) {
+    if (!nombreLimpio) return { saga: null, entrega: null };
 
+    let saga = null;
+    let entrega = null;
+
+    // 1. Patrón: "Nombre de Saga N" (número al final, 1-2 dígitos)
+    //    Ej: "Rápidos Y Furiosos 9", "John Wick 4", "Rocky 2"
+    let m = nombreLimpio.match(/^(.*?)\s+(\d{1,2})$/);
+    if (m) {
+        const posibleSaga = m[1].trim();
+        const num = parseInt(m[2]);
+        // Excluir años (1900-2099) y números absurdos
+        if (num >= 1 && num <= 20 && posibleSaga.length >= 3) {
+            saga = posibleSaga;
+            entrega = num;
+        }
+    }
+
+    // 2. Patrón: "Nombre de Saga - Parte N" o "Nombre - N"
+    //    Ej: "El Señor de los Anillos - Las Dos Torres" (no tiene número, pero tiene guion)
+    //    Ej: "Rápidos y Furiosos - Parte 9"
+    if (!saga) {
+        m = nombreLimpio.match(/^(.*?)\s*[-–—]\s*(?:parte|part|capítulo|chapter)\s*(\d{1,2})$/i);
+        if (m) {
+            saga = m[1].trim();
+            entrega = parseInt(m[2]);
+        }
+    }
+
+    // 3. Patrón: "Nombre de Saga: Subtítulo" (ej: "Harry Potter: La Piedra Filosofal")
+    //    En este caso, la saga es lo que está antes de los dos puntos.
+    if (!saga) {
+        m = nombreLimpio.match(/^(.*?)\s*:\s*(.+)$/);
+        if (m) {
+            const posibleSaga = m[1].trim();
+            // Solo si el nombre base es razonablemente largo y no es una fecha/hora
+            if (posibleSaga.length >= 3 && !/^\d+$/.test(posibleSaga)) {
+                saga = posibleSaga;
+                entrega = null; // No sabemos la entrega
+            }
+        }
+    }
+
+    // 4. Patrón: "Nombre de Saga - Subtítulo" (ej: "El Señor de los Anillos - Las Dos Torres")
+    //    Solo si no tiene número al final, pero tiene un guion separando.
+    if (!saga) {
+        m = nombreLimpio.match(/^(.*?)\s*[-–—]\s*(.+)$/);
+        if (m) {
+            const posibleSaga = m[1].trim();
+            const posibleSubtitulo = m[2].trim();
+            // Evitar falsos positivos: el subtítulo debe tener al menos 3 letras
+            if (posibleSaga.length >= 3 && /[a-záéíóúñü]{3,}/i.test(posibleSubtitulo)) {
+                saga = posibleSaga;
+                entrega = null; // No sabemos la entrega
+            }
+        }
+    }
+
+    return { saga, entrega };
+}
 // ----------------------------------------------------------------------------
 // Bandera 4: Secuela con palabra
 // Part 2, Parte II, Chapter 3, Book 2, Volume 4
@@ -2325,6 +2390,7 @@ module.exports = {
     UMBRAL_SALTAR_INVESTIGACION,
 
     quitarExtension,
+    extraerInfoSaga,
     normalizarParaMatching,
     limpiarNombreSerie,
     explotar_patron_sitios,

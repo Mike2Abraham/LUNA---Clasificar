@@ -421,6 +421,12 @@ function enriquecerArchivoDesdeReporte(archivo, reporte) {
     const resultadoFecha = extraerYLimpiarFecha(archivo, nombreLimpio);
     nombreLimpio = resultadoFecha.nombreLimpio;
 
+        // NUEVO: Extraer info de saga (solo para películas y series)
+    let sagaInfo = { saga: null, entrega: null };
+    if (ganadora === 'pelicula' || ganadora === 'serie') {
+        sagaInfo = Clasificador.extraerInfoSaga(nombreLimpio);
+    }
+
     archivo.info = {
         nombreLimpio: nombreLimpio,
         tituloLimpio: tituloLimpio,
@@ -429,6 +435,8 @@ function enriquecerArchivoDesdeReporte(archivo, reporte) {
         temporada:    (dSerie.temporada !== undefined ? dSerie.temporada : null),
         capituloNumero: (dSerie.capitulo !== undefined ? dSerie.capitulo : null),
         anio:         (dPeli.anio !== undefined ? dPeli.anio : null),
+        saga: sagaInfo.saga,        // <-- NUEVO
+        entrega: sagaInfo.entrega,
         esEstructuraSerie: tieneDeteccionSerie,
         puntajeDeteccion: puntajeDeteccion,
         categoriaGanadora: ganadora
@@ -844,7 +852,7 @@ function tomarDecision(paquete) {
                     archivo.info.esEstructuraSerie = false;
                 }
             }
-            
+
             // Desempate / todo cero
             if (elegido === null) {
                 // FIX C4: primero mirar las detecciones concretas de banderas

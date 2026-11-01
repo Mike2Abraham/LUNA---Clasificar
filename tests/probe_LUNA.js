@@ -25,6 +25,9 @@ const RUTAS_PRUEBA = [
     'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\Dueña de Mi - 139 [16-10-2026].mp4',
     'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\La Mujer Prohibida - 061 [FINAL].mp4',
     'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\pocoyo (2) [12-2-26].mp4',
+    'D:\\ANIME\\Peliculas\\El Señor de los Anillos - Las Dos Torres.mkv',
+    'D:\\ANIME\\Peliculas\\Harry Potter La Piedra Filosofal.mkv',
+    'D:\\ANIME\\Peliculas\\John Wick 4.mkv',
     'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\#Zombie Sagashitemasu 3 Sub Español Online gratis — JkAnime.mp4',
 ];
 
@@ -254,6 +257,8 @@ async function ejecutarProbeLUNA2() {
             console.log('     salida.info.serie:', JSON.stringify(resultado.salida.info.serie));
             console.log('     salida.info.temporada:', resultado.salida.info.temporada);
             console.log('     salida.info.capituloNumero:', resultado.salida.info.capituloNumero);
+            console.log('     salida.info.entrega:', resultado.salida.info.entrega);
+            console.log('     salida.info.saga:', resultado.salida.info.saga);
         }
         if (resultado && Array.isArray(resultado.errores) && resultado.errores.length > 0) {
             console.log('     errores:');
