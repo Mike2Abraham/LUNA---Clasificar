@@ -794,6 +794,15 @@ function tomarDecision(paquete) {
             // NUEVO: Si la DB lo marcó como variado, forzamos la decisión.
             if (esVariadoDB) {
                 elegido = 'esVARIADO';
+
+                // LIMPIEZA: Borrar rastros de serie/peli que hayan quedado del rescate
+                if (archivo.info) {
+                    archivo.info.serie = null;
+                    archivo.info.temporada = null;
+                    archivo.info.capituloNumero = null;
+                    archivo.info.esEstructuraSerie = false;
+                    archivo.info.nombreLimpio = archivo.info.nombreLimpio; // Mantenemos el nombre limpio ("Pocoyo")
+                }
             }
 
             // Desempate / todo cero
