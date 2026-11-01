@@ -14,7 +14,7 @@ const path = require('path');
 const { setBinariosFromFolder, procesarDuracionMediainfo } = require('./Servicios/ProcesosCore.js');
 const Clasificador = require('./Clasificacion.js');
 const { guardarLogDebug } = require('./Debug/LUNA_Logger.js');
-const VERSION_LUNA = '1.2.0';
+const VERSION_LUNA = '1.2.1';
 var seEjecuto = false;
 var seEjecutoIPC = false;
 
@@ -665,6 +665,24 @@ function normalizarClaveDB(nombre) {
         .toLowerCase();
 }
 
+function variantesClaveDB(nombre) {
+    const base = normalizarClaveDB(nombre);
+    if (!base) return [];
+
+    const variantes = new Set([base]);
+
+    // Variante útil para títulos con la 'a' faltante tras quitar tildes
+    // (ej. "Dueñ De Mi" -> "Duena De Mi")
+    const conA = base
+        .split(/\s+/)
+        .map(palabra => /^[a-z]+n$/i.test(palabra) ? palabra + 'a' : palabra)
+        .join(' ');
+
+    if (conA && conA !== base) variantes.add(conA);
+
+    return [...variantes];
+}
+
 // Busca un nombre en una categoria concreta.
 // Estrategia:
 //   1. aliases (global, fuera de categoria) -> nombre canonico
@@ -675,46 +693,48 @@ function buscarEnCategoriaDB(db, nombreLimpio, categoria) {
     const bucket = db.categorias[categoria];
     if (!bucket || !bucket.nombres) return null;
 
-    const claveOriginal = normalizarClaveDB(nombreLimpio);
-    if (!claveOriginal) return null;
+    const claves = variantesClaveDB(nombreLimpio);
+    if (!claves.length) return null;
 
-    // 1. Resolver aliases (pueden encadenarse, max 3 saltos)
-    let clave = claveOriginal;
-    if (db.aliases) {
-        for (let salto = 0; salto < 3; salto++) {
-            const destino = db.aliases[clave];
-            if (!destino) break;
-            const destinoNorm = normalizarClaveDB(destino);
-            if (!destinoNorm || destinoNorm === clave) break;
-            clave = destinoNorm;
+    for (const claveOriginal of claves) {
+        // 1. Resolver aliases (pueden encadenarse, max 3 saltos)
+        let clave = claveOriginal;
+        if (db.aliases) {
+            for (let salto = 0; salto < 3; salto++) {
+                const destino = db.aliases[clave] || Object.entries(db.aliases).find(([k]) => normalizarClaveDB(k) === clave)?.[1];
+                if (!destino) break;
+                const destinoNorm = normalizarClaveDB(destino);
+                if (!destinoNorm || destinoNorm === clave) break;
+                clave = destinoNorm;
+            }
         }
-    }
 
-    // 2. Match exacto
-    const entrada = bucket.nombres[clave];
-    if (entrada) {
-        return {
-            categoria,
-            nombreOficial: entrada.nombreOficial || clave,
-            confianza: entrada.confianza || 1.0,
-            viaAlias: clave !== claveOriginal
-        };
-    }
+        // 2. Match exacto por clave normalizada
+        for (const [keyCatalogo, entrada] of Object.entries(bucket.nombres)) {
+            const keyNorm = normalizarClaveDB(keyCatalogo);
+            if (keyNorm === clave) {
+                return {
+                    categoria,
+                    nombreOficial: entrada.nombreOficial || keyCatalogo,
+                    confianza: entrada.confianza || 1.0,
+                    viaAlias: clave !== claveOriginal
+                };
+            }
+        }
 
-    // 3. Match por prefijo (solo si el nombre empieza por una clave de la DB
-    //    seguida de espacio). Evita falsos positivos tipo "el" que matchearia
-    //    media DB.
-    for (const key of Object.keys(bucket.nombres)) {
-        if (key.length < 4) continue;
-        if (clave.startsWith(key + ' ')) {
-            const e = bucket.nombres[key];
-            return {
-                categoria,
-                nombreOficial: e.nombreOficial || key,
-                confianza: e.confianza || 1.0,
-                viaAlias: false,
-                viaPrefijo: true
-            };
+        // 3. Match por prefijo comparando versiones normalizadas
+        for (const [keyCatalogo, entrada] of Object.entries(bucket.nombres)) {
+            const keyNorm = normalizarClaveDB(keyCatalogo);
+            if (keyNorm.length < 4) continue;
+            if (clave.startsWith(keyNorm + ' ')) {
+                return {
+                    categoria,
+                    nombreOficial: entrada.nombreOficial || keyCatalogo,
+                    confianza: entrada.confianza || 1.0,
+                    viaAlias: false,
+                    viaPrefijo: true
+                };
+            }
         }
     }
 
@@ -784,22 +804,55 @@ function tomarDecision(paquete) {
             const pPeli  = (rep.pelicula && rep.pelicula.puntos) || 0;
             const pSerie = (rep.serie    && rep.serie.puntos)    || 0;
             let pVari  = (rep.variado  && rep.variado.puntos)  || 0;
-            let pPeliFinal = pPeli;
             let elegido = null;
 
-                        // === NUEVO: Chequeo de DB para VARIADO (350 puntos) ===
+            // === DB override primero: si el nombre limpio coincide con una categoria
+            // de la DB, gana esa categoria antes del desempate por puntuacion.
+            // Esto corrige casos como 'La Novia' / 'Dueña de Mi' que son novelas.
+            try {
+                const db = cargarDB();
+                if (db && archivo.info && archivo.info.nombreLimpio) {
+                    const prioridad = ['novela', 'programa', 'pelicula', 'variado'];
+                    for (const categoria of prioridad) {
+                        const matchDB = buscarEnCategoriaDB(db, archivo.info.nombreLimpio, categoria);
+                        if (!matchDB) continue;
+
+                        const mapa = {
+                            novela: 'esNOVELA',
+                            programa: 'esPROGRAM',
+                            pelicula: 'esPELI',
+                            variado: 'esVARIADO'
+                        };
+
+                        elegido = mapa[categoria];
+                        archivo.info.DBmetadata = {
+                            fuente: db.fuente || null,
+                            version: db.version || null,
+                            categoriaDB: categoria,
+                            nombreOficial: matchDB.nombreOficial,
+                            viaAlias: !!matchDB.viaAlias,
+                            viaPrefijo: !!matchDB.viaPrefijo
+                        };
+                        break;
+                    }
+                }
+            } catch (e) {
+                paquete.errores.push({
+                    etapa: 'tomarDecision.dbOverride',
+                    ruta: archivo.ruta,
+                    mensaje: e.message
+                });
+            }
+
+            // === NUEVO: Chequeo de DB para VARIADO (350 puntos) ===
             let esVariadoDB = false;
             try {
                 const db = cargarDB();
                 if (db && archivo.info && archivo.info.nombreLimpio) {
-                    // Usamos la misma función de búsqueda, pero en la categoría 'variado'
                     const matchDB = buscarEnCategoriaDB(db, archivo.info.nombreLimpio, 'variado');
                     if (matchDB) {
-                        // Si la DB dice que es variado, le damos 350 puntos.
-                        pVari += 350; 
+                        pVari += 350;
                         esVariadoDB = true;
-                        
-                        // Guardamos la metadata para que el usuario sepa por qué
                         archivo.info.DBmetadata = {
                             fuente: db.fuente || null,
                             version: db.version || null,
@@ -811,7 +864,6 @@ function tomarDecision(paquete) {
                     }
                 }
             } catch (e) {
-                // Si falla la DB, no rompemos el pipeline
                 paquete.errores.push({
                     etapa: 'tomarDecision.dbVariado',
                     ruta: archivo.ruta,
@@ -819,16 +871,15 @@ function tomarDecision(paquete) {
                 });
             }
 
-                        // === NUEVO: Chequeo de DB para PELICULA (350 puntos) ===
+            // === NUEVO: Chequeo de DB para PELICULA (350 puntos) ===
             let esPeliDB = false;
             try {
                 const db = cargarDB();
                 if (db && archivo.info && archivo.info.nombreLimpio) {
                     const matchDB = buscarEnCategoriaDB(db, archivo.info.nombreLimpio, 'pelicula');
                     if (matchDB) {
-                        pPeliFinal += 350; // <-- Le sumamos a la variable nueva
+                        pPeli += 350;
                         esPeliDB = true;
-                        
                         archivo.info.DBmetadata = {
                             fuente: db.fuente || null,
                             version: db.version || null,
@@ -847,10 +898,9 @@ function tomarDecision(paquete) {
                 });
             }
 
-
-            if (pPeli > pSerie && pPeli > pVari) elegido = 'esPELI';
-            else if (pSerie > pPeli && pSerie > pVari) elegido = 'esSERIE';
-            else if (pVari > pPeli && pVari > pSerie) elegido = 'esVARIADO';
+            if (elegido === null && pPeli > pSerie && pPeli > pVari) elegido = 'esPELI';
+            else if (elegido === null && pSerie > pPeli && pSerie > pVari) elegido = 'esSERIE';
+            else if (elegido === null && pVari > pPeli && pVari > pSerie) elegido = 'esVARIADO';
 
             // NUEVO: Si la DB lo marcó como variado, forzamos la decisión.
             if (esVariadoDB) {

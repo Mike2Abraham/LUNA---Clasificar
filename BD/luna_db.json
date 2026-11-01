@@ -1238,6 +1238,7 @@
         "contra el destino": { "nombreOficial": "Contra el Destino", "confianza": 1.0 },
         "destino": { "nombreOficial": "Destino", "confianza": 0.8 },
         "dueña de mi": { "nombreOficial": "Dueña de Mí", "confianza": 1.0 },
+        "dueñ de mi": { "nombreOficial": "Dueña de Mí", "confianza": 1.0 },
         "Dueñ De Mi": { "nombreOficial": "Dueña de Mí", "confianza": 1.0 },
         "el arbol de los secretos": { "nombreOficial": "El Árbol de los Secretos", "confianza": 1.0 },
         "el extraño en el espejo": { "nombreOficial": "El Extraño en el Espejo", "confianza": 1.0 },
