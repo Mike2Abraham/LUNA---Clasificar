@@ -60,6 +60,73 @@ Fue diseñado para ordenar discos duros llenos de series, películas, novelas y 
 > Versión actual del proyecto: **1.2.1**
 > Base de datos actual: **1.0.0**
 
+
+
+***
+
+## 🆕 Novedades en v1.2.4: Etiquetado Inteligente de Variados
+
+<p align="center">
+  <img src="./assets/4.png" width="100%">
+</p>
+
+En esta versión, LUNA no solo clasifica los archivos como `esVARIADO`, sino que ahora es capaz de **sub-clasificarlos** con una etiqueta semántica (`Etiqueta_V`). 
+
+Sabemos que en la categoría "Variado" cae de todo: desde un clip de YouTube, hasta una nota de voz de WhatsApp o un video de la cámara del celular. Para que no tengas que adivinar qué es cada archivo, agregamos un sistema modular de etiquetas.
+
+### 🏷️ ¿Qué etiquetas existen?
+Si el archivo es `esVARIADO`, LUNA intentará asignar una de las siguientes etiquetas:
+
+1.  **VideoClick**: Videos de 1 a 6 minutos que tienen pinta de ser clips musicales o de redes (detecta patrones como `[Official Video]`, `[470k]`, etc.).
+2.  **Grabación de WhatsApp**: Detecta el famoso formato `PTT-202311...-WA0001` o videos en rutas de WhatsApp.
+3.  **Grabación de Pantalla**: Reconoce desde el formato de Android (`ScreenRecord_2023...`), el de OBS (`2026-11-01-...`), hasta el de Windows 11 (`Screen Recording 20250713 012858`).
+4.  **Grabación de Cámara / DCIM**: Identifica videos crudos del teléfono (`VID_202...`, `IMG_...`) o archivos en la carpeta `/DCIM/`.
+5.  **Animado / Video Corto**: Si el nombre limpio del archivo coincide con la base de datos de animados (`Pocoyo`, `Peppa Pig`, etc.).
+6.  **Variado Desconocido**: El cajón de sastre. Si no coincide con ninguno, se le asigna esta etiqueta para que el usuario decida.
+
+### 📍 ¿Cómo se ve en la salida?
+La etiqueta se agrega directamente en el `info` y en la raíz de la salida.
+
+```json
+{
+  "esCC": "esVARIADO",
+  "nombreLimpio": "Screen Recording 20250713 012858 Chrome",
+  "Etiqueta_V": "Grabación de Pantalla",
+  "info": {
+    "tipoArchivo": "video",
+    "extension": "mp4",
+    "Etiqueta_V": "Grabación de Pantalla"
+  }
+}
+```
+
+### 🛠️ ¿Cómo se usa? (Para desarrolladores)
+No tenés que hacer nada especial. El sistema se ejecuta automáticamente justo después de que LUNA decide que un archivo es `esVARIADO`. 
+
+Simplemente, cuando leas la salida, podés filtrar por la etiqueta:
+```javascript
+const resultado = await LUNA('C:\\DCIM\\VID_20231101_143022.mp4');
+if (resultado.salida.esCC === 'esVARIADO') {
+    console.log(resultado.salida.Etiqueta_V); // "Grabación de Cámara / DCIM"
+}
+```
+
+### ⚙️ ¿Cómo funciona por dentro? (Arquitectura)
+La lógica vive en el nuevo archivo **`EtiquetadorVariado.js`**. Fue diseñado bajo el principio de **"solo agregar, nunca modificar"**. Es un sistema de reglas en cascada:
+1. Se prueba el nombre del archivo (Regex).
+2. Se prueba la ruta del archivo (por si viene de `/WhatsApp/` o `/DCIM/`).
+3. Se prueba la duración (para los VideoClicks).
+4. Se consulta la base de datos (para los Animados).
+Si alguna regla hace "match", devuelve la etiqueta y se detiene. Si querés agregar una nueva etiqueta en el futuro (ej: "Grabación de Discord"), solo tenés que agregar un `if` nuevo en ese archivo.
+
+***
+
+**LOG de README:** 
+<p align="center">
+  <img src="./assets/5.png" width="100%">
+</p>
+
+
 ---
 
 ## 🆕 Novedades en v1.2.1
