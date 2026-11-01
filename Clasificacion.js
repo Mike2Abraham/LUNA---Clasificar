@@ -1239,7 +1239,10 @@ function limpiarNombreSerieAvanzado(nombreOriginal) {
     limpio = limpio.replace(/[\\/]+/g, ' ');
     limpio = limpio.replace(/[_\.\-=\+]+/g, ' ');
     limpio = limpio.replace(/[,\(\)\[\]\{\}]+/g, ' ');
-
+    limpio = limpio.replace(/[—–]/g, ' '); // Em-dash y en-dash
+    // NUEVO: Eliminar el símbolo # al inicio del nombre
+    limpio = limpio.replace(/^#+/, '').trim();
+    
     // 8. Eliminar resoluciones, codecs, formatos
     limpio = limpio.replace(/\b(480p|720p|1024p|1080p|2160p|4k|HD|DVD|bluray|brrip|webrip|x264|x265|dvdrip|HDRip|HDTV|WEB-DL|CAM|Repack|Final|Special|hdr|hevc|aac|ac3|dts|xvid|r5|ts|FULL|Full|full)\b/ig, ' ');
 
@@ -1247,7 +1250,7 @@ function limpiarNombreSerieAvanzado(nombreOriginal) {
     limpio = limpio.replace(/\b(1st|9th|8th|7th|6th|5th|4th|2nd|3rd|1ro|9no|8vo|7mo|6to|5to|4to|2do|3ro)\b/ig, ' ');
 
     // 10. Eliminar OVA/ONA/Special/Movie/Pelicula
-    limpio = limpio.replace(/\b(OVA|ONA|Special|MonosChinos|Monoschinos|Movie|Pel[ií]cula)\b/ig, ' ');
+    limpio = limpio.replace(/\b(OVA|ONA|Special|MonosChinos|Online|Gratis|online|offnline|Offnline|gratis|JkAnime|jkAnime|—|Monoschinos|Movie|Pel[ií]cula)\b/ig, ' ');
 
     // 11. Eliminar palabras de idioma (lista de limpiarTitulo)
     limpio = limpio.replace(/\b(Español|español|Castellano|castellano|Latino|latino|Inglés|inglés|English|english|Japonés|japonés|Japanese|japanese|Alemán|alemán|German|german|Francés|francés|French|french|Italiano|italiano|Italian|italian|Portugués|portugués|Portuguese|portuguese|Ruso|ruso|Russian|russian|Chino|chino|Chinese|chinese|Coreano|coreano|Korean|korean|Árabe|árabe|Arabic|arabic|Hindi|hindi|Turco|turco|Turkish|turkish|Polaco|polaco|Polish|polish|Sueco|sueco|Swedish|swedish|Danés|danés|Danish|danish|Holandés|holandés|Dutch|dutch|Griego|griego|Greek|greek|Checo|checo|Czech|czech|Húngaro|húngaro|Hungarian|hungarian|Rumano|rumano|Romanian|romanian|Tailandés|tailandés|Thai|thai|Vietnamita|vietnamita|Vietnamese|vietnamese|Hebreo|hebreo|Hebrew|hebrew|Noruego|noruego|Norwegian|norwegian|Finlandés|finlandés|Finnish|finnish|Catalán|catalán|Catalan|catalan|Gallego|gallego|Galician|galician|Vasco|vasco|Basque|basque|Serbio|serbio|Serbian|serbian|Croata|croata|Croatian|croatian|Búlgaro|búlgaro|Bulgarian|bulgarian|Eslovaco|eslovaco|Slovak|slovak|Esloveno|esloveno|Slovenian|slovenian|Lituano|lituano|Lithuanian|lithuanian|Letón|letón|Latvian|latvian|Estonio|estonio|Estonian|estonian|Islandés|islandés|Icelandic|icelandic|Macedonio|macedonio|Macedonian|macedonian|Albanés|albanés|Albanian|albanian|Bosnio|bosnio|Bosnian|bosnian|Georgiano|georgiano|Georgian|georgian|Armenio|armenio|Armenian|armenian|Persa|persa|Persian|persian|Urdú|urdú|Urdu|urdu|Bengalí|bengalí|Bengali|bengali|Tagalo|tagalo|Tagalog|tagalog|Malayo|malayo|Malay|malay|Indonesio|indonesio|Indonesian|indonesian|Ucraniano|ucraniano|Ukrainian|ukrainian|Bielorruso|bielorruso|Belarusian|belarusian|Mongol|mongol|Mongolian|mongolian|Nepalí|nepalí|Nepali|nepali|Sinhala|sinhala|Sinhalese|sinhalese|Camboyano|camboyano|Khmer|khmer|Laosiano|laosiano|Lao|lao|Birmano|birmano|Burmese|burmese)\b/ig, ' ');
