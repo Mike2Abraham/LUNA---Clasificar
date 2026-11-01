@@ -56,6 +56,7 @@ function serializeResult(item, data) {
     titulo: null,
     subtitulo: null,
     categoriaHumana: null,
+    etiquetaVariado: null,
     detalles: [], // Solo datos reales
     error: null
   };
@@ -91,6 +92,15 @@ function serializeResult(item, data) {
   
   if (subParts.length > 0) {
     base.subtitulo = subParts.join(' · ');
+  }
+
+  const etiquetaVariado = info.Etiqueta_V || s.Etiqueta_V || null;
+  if (etiquetaVariado) {
+    base.etiquetaVariado = etiquetaVariado;
+    if (s.esCC === 'esVARIADO') {
+      base.subtitulo = etiquetaVariado;
+    }
+    base.detalles.push({ etiqueta: 'Etiqueta', valor: etiquetaVariado });
   }
 
   // Detalles: Solo lo que existe y es útil

@@ -29,6 +29,13 @@ const RUTAS_PRUEBA = [
     'D:\\ANIME\\Peliculas\\Harry Potter La Piedra Filosofal.mkv',
     'D:\\ANIME\\Peliculas\\John Wick 4.mkv',
     'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\#Zombie Sagashitemasu 3 Sub Español Online gratis — JkAnime.mp4',
+    'D:\\MÚSICA\\NEW\\Bebe_Rexha_-_Im_A_Mess_[Official_Music_Video](360p).mp4',
+    'D:\\MÚSICA\\NEW\\Evanescence - Bring Me To Life (Official Music Video)(720P_HD).mp4',
+    'D:\\MÚSICA\\NEW\\VID_20261101_143022.mp4',
+    'D:\\MÚSICA\\NEW\\Screen_Recording_20250713-012858_Chrome.mp4',
+    'D:\\MÚSICA\\NEW\\ScreenCapture_20261101-143022.mp4',
+    'D:\\MÚSICA\\NEW\\ScreenRecord_20261101-143022.mp4',
+    'D:\\MÚSICA\\NEW\\Yomil y el Dany - SANTA 2 (video oficial) _drill(480P)_1.mp4'
 ];
 
 // ============================================================================

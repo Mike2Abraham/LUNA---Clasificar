@@ -89,6 +89,9 @@
       const badge = item.estado === 'ok' ? 'ok' : item.estado === 'warning' ? 'warn' : 'err';
       const badgeText = item.estado === 'ok' ? 'OK' : item.estado === 'warning' ? 'Aviso' : 'Error';
       
+      const etiquetaVariado = item.etiquetaVariado || null;
+      const subtituloFinal = item.subtitulo || (item.categoriaHumana === 'Variado' && etiquetaVariado ? etiquetaVariado : '');
+
       // Construir HTML de detalles (solo si hay datos)
       let detallesHtml = '';
       if (item.detalles && item.detalles.length > 0) {
@@ -101,7 +104,7 @@
       }
 
       // Subtítulo opcional
-      const subtituloHtml = item.subtitulo ? `<div class="card-subtitle">${item.subtitulo}</div>` : '';
+      const subtituloHtml = subtituloFinal ? `<div class="card-subtitle">${subtituloFinal}</div>` : '';
       
       // Título (si es null, usamos el nombre del archivo)
       const titulo = item.titulo || 'Archivo sin nombre claro';
