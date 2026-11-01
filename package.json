@@ -1,6 +1,7 @@
 {
   "name": "luna-clasificador",
   "version": "1.2.1",
+  "icon": "assets/icons.png",
   "description": "Clasificador local de archivos multimedia (película, serie, variado, programa, novela)",
   "main": "LUNA.js",
   "files": [
@@ -8,6 +9,9 @@
     "Clasificacion.js",
     "Debug/LUNA_Logger.js",
     "tests/probe_LUNA.js",
+    "tests/luna_dashboard_server.js",
+    "tests/luna_dashboard.html",
+    "assets/icons.png",
     "LUNA.js",
     "Servicios/ProcesosCore.js",
     "Servicios/ResolverPathffmpeg.js",
@@ -16,11 +20,20 @@
   "optionalDependencies": {
     "ffmpeg-static": "^5.3.0"
   },
+  "keywords": [
+    "clasificador",
+    "multimedia",
+    "peliculas",
+    "series",
+    "ffmpeg",
+    "nodejs",
+    "file-organizer",
+    "media-classifier"
+  ],
   "engines": {
     "node": ">=18"
   },
   "author": "Abraham de Jesús Piñirí Megret",
-  "keywords": ["multimedia", "clasificador", "video", "ffmpeg", "series", "peliculas"],
   "license": "MIT",
   "repository": {
     "type": "git",

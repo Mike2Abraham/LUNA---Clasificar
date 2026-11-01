@@ -1,6 +1,14 @@
 
+<p align="center">
+  <img src="./assets/icons.png" width="120" alt="Logo del proyecto">
+</p>
+
 # 📘 README — Proyecto LUNA
 
+<!-- Banner -->
+<p align="center">
+  <img src="./assets/banner.png" width="100%">
+</p>
 > **Clasificador local de archivos multimedia** (película / serie / variado) con sistema de banderas puntuables, rescate por contexto de carpeta y reclasificación mediante base de datos de nombres conocidos.
 
 ---
@@ -81,6 +89,9 @@ Esta versión deja el sistema mucho más estable y útil en escenarios reales:
 | **DB como último recurso**           | `luna_db.json` no suma puntos: solo reclasifica `esSERIE → esPROGRAM / esNOVELA` si el nombre coincide. |
 | **No romper con entradas inválidas** | `null`, `{}`, `123`, `[]` deben devolver error controlado, no lanzar excepción.                     |
 
+<p align="center">
+  <img src="./assets/1.png" width="100%">
+</p>
 ---
 
 ## 🏗 Arquitectura general
@@ -410,6 +421,10 @@ Usado por Cine, convertidor y el IPC del render para no cargar LUNA hasta que re
 - Máx. 500 registros (FIFO).
 - Si el JSON está corrupto, se resetea a `[]`.
 - Nunca lanza excepción hacia arriba.
+
+<p align="center">
+  <img src="./assets/2.png" width="100%">
+</p>
 
 **Estructura de cada registro:**
 
@@ -969,6 +984,10 @@ Exatlon Mexico [T10] - [TX] [037].mp4               | esPROGRAM| 2530       | tr
 | M4      | `Clasificacion.js`     | `peli_secuela_numero` no pisa nombres con `[Cap-N]`                      |
 
 ---
+
+<p align="center">
+  <img src="./assets/3.png" width="100%">
+</p>
 
 ## ⚠️ Limitaciones conocidas
 
