@@ -14,7 +14,7 @@ const path = require('path');
 const { setBinariosFromFolder, procesarDuracionMediainfo } = require('./Servicios/ProcesosCore.js');
 const Clasificador = require('./Clasificacion.js');
 const { guardarLogDebug } = require('./Debug/LUNA_Logger.js');
-const VERSION_LUNA = '1.1.1';
+const VERSION_LUNA = '1.2.0';
 var seEjecuto = false;
 var seEjecutoIPC = false;
 
@@ -23,7 +23,7 @@ var seEjecutoIPC = false;
 //////////////////////////////// [RUTA DEL BINARIO DE FFMPEG] //////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-setBinariosFromFolder('D:\\NAtifevierddd\\ffmpeg-static'); //cambialo a merced ej: D:\\NAtifevierddd\\ffmpeg-static\\
+//setBinariosFromFolder('D:\\NAtifevierddd\\ffmpeg-static'); //cambialo a merced ej: D:\\NAtifevierddd\\ffmpeg-static\\
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -63,6 +63,7 @@ function imprimirBannerLUNA() {
      DB fecha:          ${meta.ok ? (meta.fechaActualizacion || 'N/A') : 'N/A'}
      DB fuente:         ${meta.ok ? (meta.fuente || 'N/A') : 'N/A'}
      DB categorias:     ${meta.ok ? meta.categorias.join(', ') : 'N/A'}
+     DB registros:      ${meta.ok ? (meta.totalRegistros ?? 0) : 0}
      DB aliases:        ${meta.ok ? meta.totalAliases : 0}
      ─────────────────────────────────────
      Desarrollado por Abraham de Jesus Piniri Megret
@@ -417,6 +418,14 @@ function enriquecerArchivoDesdeReporte(archivo, reporte) {
         nombreLimpio = null;
     }
 
+    const ext = path.extname(archivo.nombreOriginal).toLowerCase().replace('.', '');
+    const tipoArchivo = Clasificador.obtenerTipoArchivo(archivo.nombreOriginal);
+
+    // Compatibilidad: guardar también a nivel de archivo para los consumidores
+    // que leen salida.extension / salida.tipoArchivo desde archivo.ext / archivo.tipoArchivo.
+    archivo.ext = ext;
+    archivo.tipoArchivo = tipoArchivo;
+
     // NUEVO: Extraer y limpiar fecha
     const resultadoFecha = extraerYLimpiarFecha(archivo, nombreLimpio);
     nombreLimpio = resultadoFecha.nombreLimpio;
@@ -437,6 +446,8 @@ function enriquecerArchivoDesdeReporte(archivo, reporte) {
         anio:         (dPeli.anio !== undefined ? dPeli.anio : null),
         saga: sagaInfo.saga,        // <-- NUEVO
         entrega: sagaInfo.entrega,
+        extension: ext,             // <-- "mkv", "mp4", "mp3"
+        tipoArchivo: tipoArchivo,   // <-- "video", "audio", "desconocido"
         esEstructuraSerie: tieneDeteccionSerie,
         puntajeDeteccion: puntajeDeteccion,
         categoriaGanadora: ganadora
@@ -594,6 +605,17 @@ function cargarDB() {
     }
 }
 
+function contarRegistrosTotalesDB(db) {
+    if (!db || !db.categorias || typeof db.categorias !== 'object') return 0;
+
+    let total = 0;
+    for (const categoria of Object.values(db.categorias)) {
+        if (!categoria || !categoria.nombres || typeof categoria.nombres !== 'object') continue;
+        total += Object.keys(categoria.nombres).length;
+    }
+    return total;
+}
+
 // API util para consultar metadata de la DB (version, fecha, fuente)
 function LUNAVersion() {
     const db = cargarDB();
@@ -607,6 +629,7 @@ function LUNAVersion() {
         fechaActualizacion: db.fechaActualizacion || null,
         fuente: db.fuente || null,
         categorias: db.categorias ? Object.keys(db.categorias) : [],
+        totalRegistros: contarRegistrosTotalesDB(db),
         totalAliases: db.aliases ? Object.keys(db.aliases).length : 0
     };
 }
@@ -620,6 +643,7 @@ function infoDBMetadata() {
         fechaActualizacion: db.fechaActualizacion || null,
         fuente: db.fuente || null,
         categorias: db.categorias ? Object.keys(db.categorias) : [],
+        totalRegistros: contarRegistrosTotalesDB(db),
         totalAliases: db.aliases ? Object.keys(db.aliases).length : 0
     };
 }
@@ -1134,6 +1158,8 @@ function transformarSalida(paquete) {
             fechaExtra: archivo.info.fechaExtra || null,
             ruta: archivo.ruta,
             info: archivo.info,
+            extension: archivo.extension || archivo.info?.extension || archivo.ext || path.extname(archivo.nombreOriginal).replace('.', '').toLowerCase(),
+            tipoArchivo: archivo.tipoArchivo || archivo.info?.tipoArchivo || Clasificador.obtenerTipoArchivo(archivo.nombreOriginal),
             duracion: archivo.duracion,
             esCC: item.esCC
         };

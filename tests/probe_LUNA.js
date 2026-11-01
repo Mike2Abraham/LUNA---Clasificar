@@ -155,16 +155,7 @@ async function inspeccionarPaqueteInterno(LUNA, ruta, etiqueta) {
 // PROBE PRINCIPAL
 // ============================================================================
 
-async function ejecutarProbeLUNA2() {
-    titulo('PROBE LUNA — RONDA 2 — INICIO');
-    console.log('Node version:', process.version);
-    console.log('Plataforma:', process.platform);
-    console.log('CWD:', process.cwd());
-    console.log('Rutas configuradas:', RUTAS_PRUEBA.length);
-    RUTAS_PRUEBA.forEach((r, i) => console.log(`  [${i + 1}] ${r}`));
-
-    // ---- 1. Cargar modulos ----
-    sub('PASO 1: cargando modulos');
+async function llamar_a_LUNA() {
     let LUNA, Clasificacion;
     try {
         Clasificacion = require('../Clasificacion.js');
@@ -176,6 +167,9 @@ async function ejecutarProbeLUNA2() {
     }
     try {
         LUNA = require('../LUNA_clasificador.js');
+
+
+        LUNA.setBinariosFromFolder('D:\\NAtifevierddd\\ffmpeg-static'); //cambialo a merced ej: D:\\NAtifevierddd\\ffmpeg-static\\
         console.log('  LUNA_clasificador.js OK');
     } catch (e) {
         console.error('  !! FALLO LUNA_clasificador.js');
@@ -185,6 +179,23 @@ async function ejecutarProbeLUNA2() {
 
     const res = LUNA.infoDBMetadata();
     console.log('respuesta:', res)
+
+    return { LUNA, Clasificacion };
+}
+
+async function ejecutarProbeLUNA2() {
+    titulo('PROBE LUNA — RONDA 2 — INICIO');
+    console.log('Node version:', process.version);
+    console.log('Plataforma:', process.platform);
+    console.log('CWD:', process.cwd());
+    console.log('Rutas configuradas:', RUTAS_PRUEBA.length);
+    RUTAS_PRUEBA.forEach((r, i) => console.log(`  [${i + 1}] ${r}`));
+
+    // ---- 1. Cargar modulos ----
+    sub('PASO 1: cargando modulos');
+
+    const { LUNA, Clasificacion } = await llamar_a_LUNA();
+
     // ---- 2. Verificar existencia de cada ruta ----
     sub('PASO 2: verificando existencia de rutas');
     const rutasValidas = [];
@@ -253,6 +264,8 @@ async function ejecutarProbeLUNA2() {
         console.log('     salida.nombreLimpio:', JSON.stringify(resultado && resultado.salida && resultado.salida.nombreLimpio));
         console.log('     salida.FechaExtra:', JSON.stringify(resultado && resultado.salida && resultado.salida.fechaExtra));
         console.log('     salida.tituloLimpio:', JSON.stringify(resultado && resultado.salida && resultado.salida.tituloLimpio));
+        console.log('     salida.extension:', JSON.stringify(resultado && resultado.salida && resultado.salida.extension));
+        console.log('     salida.tipoArchivo:', JSON.stringify(resultado && resultado.salida && resultado.salida.tipoArchivo));
         if (resultado && resultado.salida && resultado.salida.info) {
             console.log('     salida.info.serie:', JSON.stringify(resultado.salida.info.serie));
             console.log('     salida.info.temporada:', resultado.salida.info.temporada);

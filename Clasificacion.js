@@ -38,6 +38,26 @@ const BRETERO_CARPETAS = {
     serie: ['series', 'serie', 'anime', 'animes', 'manga', 'mangas', 'dorama', 'doramas', 'kdrama', 'kdramas']
 };
 
+
+const EXTENSIONES_VIDEO = new Set([
+    '.mp4', '.mkv', '.avi', '.mov', '.webm', '.wmv', '.flv', '.m4v',
+    '.mpg', '.mpeg', '.ts', '.m2ts', '.mts', '.3gp', '.ogv', '.divx',
+    '.vob', '.asf', '.rm', '.rmvb', '.f4v'
+]);
+
+const EXTENSIONES_AUDIO = new Set([
+    '.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.wma', '.opus',
+    '.aiff', '.alac', '.ape', '.mid', '.midi', '.amr', '.au', '.ra'
+]);
+
+function obtenerTipoArchivo(nombreOriginal) {
+    const ext = path.extname(nombreOriginal).toLowerCase();
+    if (EXTENSIONES_VIDEO.has(ext)) return 'video';
+    if (EXTENSIONES_AUDIO.has(ext)) return 'audio';
+    return 'desconocido';
+}
+
+
 // ----------------------------------------------------------------------------
 // CONFIGURACION GLOBAL
 // ----------------------------------------------------------------------------
@@ -1962,11 +1982,6 @@ function variado_metadato_personal(archivo) {
 // BANDERA ASINCRONA COMPARTIDA: INVESTIGAR CARPETA
 // ============================================================================
 
-const EXTENSIONES_VIDEO = new Set([
-    '.mp4', '.mkv', '.avi', '.mov', '.webm', '.wmv', '.flv', '.m4v',
-    '.mpg', '.mpeg', '.ts', '.m2ts', '.mts', '.3gp', '.ogv', '.divx'
-]);
-
 function esVideo(nombreArchivo) {
     const ext = path.extname(nombreArchivo).toLowerCase();
     return EXTENSIONES_VIDEO.has(ext);
@@ -2398,6 +2413,7 @@ module.exports = {
     obtenerCarpetasDeRuta,
     limpiarNombreSerieAvanzado,
     limpiarNombrePelicula,
+    obtenerTipoArchivo,
 
     banderas: {
         serie: {
