@@ -14,7 +14,7 @@ const path = require('path');
 const { setBinariosFromFolder, procesarDuracionMediainfo } = require('./Servicios/ProcesosCore.js');
 const Clasificador = require('./Clasificacion.js');
 const { guardarLogDebug } = require('./Debug/LUNA_Logger.js');
-const VERSION_LUNA = '1.2.1';
+const VERSION_LUNA = '1.2.4';
 var seEjecuto = false;
 var seEjecutoIPC = false;
 
@@ -916,6 +916,22 @@ function tomarDecision(paquete) {
                 }
             }
 
+                        // === NUEVO: Etiquetado específico para VARIADO ===
+            if (elegido === 'esVARIADO') {
+                try {
+                    const Etiquetador = require('./EtiquetadorVariado.js');
+                    const etiqueta = Etiquetador.determinarEtiquetaVariado(archivo, archivo.info);
+                    archivo.info.Etiqueta_V = etiqueta;
+                } catch (e) {
+                    paquete.errores.push({
+                        etapa: 'tomarDecision.EtiquetaVariado',
+                        ruta: archivo.ruta,
+                        mensaje: e.message
+                    });
+                    archivo.info.Etiqueta_V = 'Variado Desconocido'; // Fallback seguro
+                }
+            }
+
                         // NUEVO: Si la DB lo marcó como película, forzamos.
             if (esPeliDB) {
                 elegido = 'esPELI';
@@ -1206,6 +1222,7 @@ function transformarSalida(paquete) {
             nombreLimpio: archivo.nombreLimpio,
             tituloLimpio: archivo.info.tituloLimpio || null,
             fechaExtra: archivo.info.fechaExtra || null,
+            Etiqueta_V: archivo.info.Etiqueta_V || null,
             ruta: archivo.ruta,
             info: archivo.info,
             extension: archivo.extension || archivo.info?.extension || archivo.ext || path.extname(archivo.nombreOriginal).replace('.', '').toLowerCase(),

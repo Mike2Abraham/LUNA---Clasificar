@@ -266,6 +266,7 @@ async function ejecutarProbeLUNA2() {
         console.log('     salida.tituloLimpio:', JSON.stringify(resultado && resultado.salida && resultado.salida.tituloLimpio));
         console.log('     salida.extension:', JSON.stringify(resultado && resultado.salida && resultado.salida.extension));
         console.log('     salida.tipoArchivo:', JSON.stringify(resultado && resultado.salida && resultado.salida.tipoArchivo));
+        console.log('     salida.Etiqueta_V:', JSON.stringify(resultado && resultado.salida && resultado.salida.Etiqueta_V));
         if (resultado && resultado.salida && resultado.salida.info) {
             console.log('     salida.info.serie:', JSON.stringify(resultado.salida.info.serie));
             console.log('     salida.info.temporada:', resultado.salida.info.temporada);
