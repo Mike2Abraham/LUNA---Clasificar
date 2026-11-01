@@ -1240,9 +1240,9 @@ function limpiarNombreSerieAvanzado(nombreOriginal) {
     limpio = limpio.replace(/[_\.\-=\+]+/g, ' ');
     limpio = limpio.replace(/[,\(\)\[\]\{\}]+/g, ' ');
     limpio = limpio.replace(/[—–]/g, ' '); // Em-dash y en-dash
-    // NUEVO: Eliminar el símbolo # al inicio del nombre
-    limpio = limpio.replace(/^#+/, '').trim();
-    
+    // Eliminar el símbolo # al inicio del nombre
+    //limpio = limpio.replace(/^#+/, '').trim();
+
     // 8. Eliminar resoluciones, codecs, formatos
     limpio = limpio.replace(/\b(480p|720p|1024p|1080p|2160p|4k|HD|DVD|bluray|brrip|webrip|x264|x265|dvdrip|HDRip|HDTV|WEB-DL|CAM|Repack|Final|Special|hdr|hevc|aac|ac3|dts|xvid|r5|ts|FULL|Full|full)\b/ig, ' ');
 
@@ -1259,13 +1259,13 @@ function limpiarNombreSerieAvanzado(nombreOriginal) {
     limpio = limpio.replace(/\b(Sub|sub|Subs|subs|Subtítulos|subtítulos|Subtitulos|subtitulos|Subtitle|subtitle|Subtitles|subtitles|Subbed|subbed|Softsub|softsub|Hardsub|hardsub)\b/ig, ' ');
 
     // 13. Eliminar Dual/Doblado/VOSE
-    limpio = limpio.replace(/\b(Dual|dual|Dual Audio|dual audio|Doblado|doblado|Dubbed|dubbed|Latino Doblado|latino doblado|Castellano Doblado|castellano doblado|VOSE|vose|VO|vo|VOS|vos|SubEsp|subesp|SubEng|subeng|ESP-ENG|esp-eng)\b/ig, ' ');
+    limpio = limpio.replace(/\b(Dual|Dual A|[Dual Audio]|[Dual A]|[La Película]|[La Pelicula]|[la pelicula]|Película|La Película|dual|Dual Audio|dual audio|Doblado|doblado|Dubbed|dubbed|Latino Doblado|latino doblado|Castellano Doblado|castellano doblado|VOSE|vose|VO|vo|VOS|vos|SubEsp|subesp|SubEng|subeng|ESP-ENG|esp-eng)\b/ig, ' ');
 
     // 14. Eliminar calidad de audio
     limpio = limpio.replace(/\b(AC3|ac3|AAC|aac|MP3|mp3|DTS|dts|DTS-HD|dts-hd|FLAC|flac|Opus|opus|EAC3|eac3|TrueHD|truehd|Atmos|atmos)\b/ig, ' ');
 
     // 15. Eliminar grupos de fansub
-    limpio = limpio.replace(/\b(AnimeFLV|animeflv|JKAnime|jkanime|MonosChinos|[EXTENDED]|[REMASTERED]|[DC]|[Director's Cut]|[CENSURADO]|[UNCUT]|[UNRATED]|[CULT]|[RETRO]|[CLASICA]|[CLASICO]|[ESTRENO]|[SD]|[PREMIUM]|[VIP]|[TX]|[FHD]|[UHD]|monoschinos|MundoAnime|mundoanime|LegionAnime|legionanime|Henshin|henshin|Kagura|kagura|Ohys-Raws|ohys-raws|Erai-raws|erai-raws|SubsPlease|subsplease|Judas|judas|BD|bd|BDRip|bdrip)\b/ig, ' ');
+    limpio = limpio.replace(/\b(AnimeFLV|animeflv|JKAnime|[Corregido]|[FINAL]|jkanime|MonosChinos|[EXTENDED]|[REMASTERED]|[DC]|[Director's Cut]|[CENSURADO]|[UNCUT]|[UNRATED]|[CULT]|[RETRO]|[CLASICA]|[CLASICO]|[ESTRENO]|[SD]|[PREMIUM]|[VIP]|[TX]|[FHD]|[UHD]|monoschinos|MundoAnime|mundoanime|LegionAnime|legionanime|Henshin|henshin|Kagura|kagura|Ohys-Raws|ohys-raws|Erai-raws|erai-raws|SubsPlease|subsplease|Judas|judas|BD|bd|BDRip|bdrip)\b/ig, ' ');
 
     // 16. Reducir espacios multiples
     limpio = limpio.replace(/\s{2,}/g, ' ').trim();
@@ -1284,6 +1284,46 @@ function limpiarNombreSerieAvanzado(nombreOriginal) {
         anio: anio
     };
 }
+
+/**
+ * v1.1.0 — Bandera de RESCATE.
+ * Explota el patrón de sitios de streaming (JkAnime, etc.):
+ * [nombre] [cap] [subtitulo] [idioma] [online] [grupo]
+ * 
+ * SOLO se activa si el pipeline ya falló en detectar el capítulo.
+ * Por eso la sacamos del array de banderas normales y la llamamos manualmente.
+ */
+function explotar_patron_sitios(archivo) {
+    const nombreOrig = quitarExtension(archivo.nombreOriginal);
+    
+    // 1. Buscar el delimitador "Sub Español" (o variantes)
+    // Aceptamos "Sub Español", "Sub", "Español", etc. pero exigimos que haya un número antes.
+    const match = nombreOrig.match(/(.*?)\s+(\d{1,4})\s+(?:Sub\s*)?(?:Español|Latino|Inglés|English|Sub)\s+(?:Online|Gratis|JkAnime)/i);
+    
+    if (!match) return { puntos: {}, detecciones: {} };
+
+    const nombreSerieBruto = match[1].trim();
+    const capitulo = parseInt(match[2]);
+
+    // Si el capítulo no es válido (ej. es 0 o algo raro), no rescatamos
+    if (!capitulo || capitulo < 1) return { puntos: {}, detecciones: {} };
+
+    // Limpiamos el nombre de la serie (por si trae cosas raras)
+    const nombreSerie = limpiarNombreSerieAvanzado(nombreSerieBruto).nombreLimpio;
+    if (!nombreSerie) return { puntos: {}, detecciones: {} };
+
+    return {
+        // Damos puntos (ej. 50, como un sxxexx) porque estamos seguros
+        puntos: { serie: PESOS_SERIE.sxxexx }, 
+        detecciones: {
+            temporada: null,
+            capitulo: capitulo,
+            nombreSerie: nombreSerie,
+            patron: 'explotar_patron_sitios'
+        }
+    };
+}
+
 // ----------------------------------------------------------------------------
 // Bandera 3: Secuela con numero romano
 // John Wick II, Rocky IV, Rambo III, Harry Potter VII
@@ -2278,6 +2318,7 @@ module.exports = {
     quitarExtension,
     normalizarParaMatching,
     limpiarNombreSerie,
+    explotar_patron_sitios,
     nombreDesdeCarpetaPadre,
     obtenerCarpetasDeRuta,
     limpiarNombreSerieAvanzado,

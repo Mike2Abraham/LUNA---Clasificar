@@ -799,7 +799,33 @@ function tomarDecision(paquete) {
                 }
             }
 
-                        // === RECLASIFICACION DB: esSERIE -> esPROGRAM / esNOVELA ===
+            // === NUEVO RESCATE: Patrón de sitios web (JkAnime) ===
+            // Si es serie, pero no tiene capítulo detectado, intentamos explotar el patrón.
+            if (elegido === 'esSERIE' && archivo.info && (archivo.info.capituloNumero === null || archivo.info.capituloNumero === undefined)) {
+                try {
+                    // Llamamos a la bandera directamente
+                    const reporteRescate = Clasificador.explotar_patron_sitios(archivo);
+                    if (reporteRescate.detecciones && reporteRescate.detecciones.capitulo) {
+                        // Actualizamos el info con lo que encontramos
+                        archivo.info.capituloNumero = reporteRescate.detecciones.capitulo;
+                        if (reporteRescate.detecciones.nombreSerie && !archivo.info.serie) {
+                            archivo.info.serie = reporteRescate.detecciones.nombreSerie;
+                        }
+                        // Actualizamos el nombreLimpio si el rescatador lo cambió
+                        if (reporteRescate.detecciones.nombreSerie) {
+                            archivo.info.nombreLimpio = reporteRescate.detecciones.nombreSerie;
+                            archivo.nombreLimpio = reporteRescate.detecciones.nombreSerie;
+                        }
+                    }
+                } catch (e) {
+                    paquete.errores.push({
+                        etapa: 'tomarDecision.rescateSitios',
+                        ruta: archivo.ruta,
+                        mensaje: e.message
+                    });
+                }
+            }
+            // === RECLASIFICACION DB: esSERIE -> esPROGRAM / esNOVELA ===
             // Solo si gano serie y todo el proceso ya termino.
             // No suma puntos, solo cambia la etiqueta final consultando luna_db.json.
             if (elegido === 'esSERIE') {
