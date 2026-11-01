@@ -25,12 +25,13 @@
 8. [Sistema de puntajes y decisión](#-sistema-de-puntajes-y-decisión)
 9. [Rescate y reclasificación](#-rescate-y-reclasificación)
 10. [API pública](#-api-pública)
-11. [Ejemplos de uso](#-ejemplos-de-uso)
+11. [Ejemplos reales de uso](#-ejemplos-reales-de-uso)
 12. [Instalación y dependencias](#-instalación-y-dependencias)
 13. [Cómo ejecutar el probe](#-cómo-ejecutar-el-probe)
-14. [Historial de fixes](#-historial-de-fixes)
-15. [Limitaciones conocidas](#-limitaciones-conocidas)
-16. [Autoría y licencia](#-autoría-y-licencia)
+14. [Novedades v1.2.1](#-novedades-en-v121)
+15. [Historial de fixes](#-historial-de-fixes)
+16. [Limitaciones conocidas](#-limitaciones-conocidas)
+17. [Autoría y licencia](#-autoría-y-licencia)
 
 ---
 
@@ -44,9 +45,28 @@
 - `esNOVELA` → telenovela
 - `esVARIADO` → video suelto, clip, personal, documental, deporte
 
-Además devuelve metadata enriquecida: **nombre limpio**, **temporada**, **capítulo**, **año**, **duración**, y **puntaje de confianza**.
+Además devuelve metadata enriquecida: **nombre limpio**, **temporada**, **capítulo**, **año**, **duración**, **fecha extra**, **tipo de archivo** y **puntaje de confianza**.
 
-Fue diseñado para ordenar discos duros llenos de series, películas y videos personales, respetando nombres "sucios" típicos de la piratería, releases, grabaciones de TV, etc.
+Fue diseñado para ordenar discos duros llenos de series, películas, novelas y videos personales, respetando nombres "sucios" típicos de la piratería, releases, grabaciones de TV y nombres manuales de series extranjeras.
+
+> Versión actual del proyecto: **1.2.1**
+> Base de datos actual: **1.0.0**
+
+---
+
+## 🆕 Novedades en v1.2.1
+
+Esta versión deja el sistema mucho más estable y útil en escenarios reales:
+
+- `infoDBMetadata()` cuenta correctamente el número total de registros de todas las categorías de `luna_db.json`.
+- El banner muestra una línea con `DB registros: X`.
+- El override de la DB ya se aplica antes del desempate, evitando que series/películas/novelas se queden en una categoría equivocada por heurísticas.
+- La comparación normalizada contra la DB corrige nombres con tildes, puntos, espacios y variantes como `Dueñ De Mi`, `La Novia`, etc.
+- La salida final expone `extension` y `tipoArchivo` de forma segura (`mkv`, `mp4`, `video`, `audio`).
+- Se mantiene compatibilidad con `archivo.info.extension`, `archivo.info.tipoArchivo` y la salida final.
+- La lógica de separación de título y nombre limpia siguió refinándose para evitar que capítulos y temporadas se queden pegados en `nombreLimpio`.
+
+---
 
 ---
 
@@ -674,59 +694,188 @@ Igual que `infoDBMetadata` + `versionLUNA`, `Creador`, `Comentario`.
 
 ---
 
-## 💡 Ejemplos de uso
+## 🧪 Ejemplos reales de uso
 
-### Uso básico
+A continuación te dejo ejemplos reales de cómo yo lo uso en proyectos de Node y Electron. Están pensados para que veas exactamente qué entra y qué sale.
+
+### 1) Uso básico en Node.js
 
 ```js
-const { LUNA } = require('./LUNA_clasificador');
+const { getLUNA } = require('luna-clasificador');
+const LUNA = getLUNA();
 
 (async () => {
-  const res = await LUNA('D:\\ANIME\\Silo [Temp 1]\\Silo - S01E03.mkv');
-  console.log(res.salida.esCC);              // 'esSERIE'
-  console.log(res.salida.info.nombreLimpio); // 'Silo'
-  console.log(res.salida.info.temporada);    // 1
-  console.log(res.salida.info.capituloNumero);// 3
+  const resultado = await LUNA.LUNA('D:\\ANIME\\La Novia - 107 [15-10-2026].mp4');
+
+  console.log(resultado.exito);
+  console.log(resultado.salida.esCC);            // esNOVELA
+  console.log(resultado.salida.nombreLimpio);   // La Novia
+  console.log(resultado.salida.info.serie);     // La Novia
+  console.log(resultado.salida.info.capituloNumero); // 107
+  console.log(resultado.salida.extension);       // mp4
+  console.log(resultado.salida.tipoArchivo);     // video
 })();
 ```
 
-### Uso por lotes
+### 2) Uso con `getFFmpegPath()` y configurando la ruta del binario
+
+Este es un patrón real que uso cuando el proyecto ya tiene ffmpeg en una ubicación custom.
 
 ```js
-const rutas = [
-  'D:\\Pelis\\Superman (2025).mkv',
-  'D:\\Novelas\\Ciudad Lejana 137.mp4',
-  'D:\\Varios\\VID_20240101.mp4'
-];
-const res = await LUNA(rutas);
-res.salida.forEach(s => console.log(s.esCC, s.nombreLimpio));
-// esPELI    Superman
-// esNOVELA  Ciudad Lejana
-// esVARIADO VID 20240101
-```
+const path = require('path');
+const { getLUNA } = require('luna-clasificador');
+const { getFFmpegPath } = require('./ResolverPathFFmpeg.js');
 
-### Con singleton
-
-```js
-const { getLUNA } = require('./luna_enchufle');
 const LUNA = getLUNA();
-const res = await LUNA.LUNA('D:\\archivo.mp4');
+const ffmpegExe = getFFmpegPath();
+const carpeta = path.dirname(ffmpegExe) + path.sep;
+
+LUNA.setBinariosFromFolder(carpeta);
+
+(async () => {
+  const res = await LUNA.LUNA('D:\\ANIME\\Peliculas\\John Wick 4.mkv');
+  console.log(JSON.stringify(res, null, 2));
+})();
 ```
 
-### Solo clasificación (sin duración)
+### 3) Uso clásico en una app Node / backend
 
 ```js
-const Clasificacion = require('./Clasificacion');
+const { getLUNA, LUNA_PATH } = require('luna-clasificador');
+const {
+  LUNA,
+  reclasificarDesdeDB,
+  cargarDB,
+  infoDBMetadata
+} = getLUNA();
 
-const reporte = await Clasificacion.clasificarArchivo({
-  nombreOriginal: 'Silo - S01E03.mkv',
-  ruta: 'D:\\Series\\Silo\\S01E03.mkv',
-  duracion: 2700
-});
+const ffmpegExe = getFFmpegPath();
+const carpeta = path.dirname(ffmpegExe) + path.sep;
+LUNA.setBinariosFromFolder(carpeta);
 
-console.log(reporte.serie.puntos);            // ej. 130
-console.log(reporte.serie.banderasQueSumaron); // [{ nombre: 'serie_sxxexx', puntos: 50, ... }, ...]
+(async () => {
+  const meta = infoDBMetadata();
+  console.log('DB:', meta);
+
+  const salida = await LUNA('D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\Dueña de Mi - 139 [16-10-2026].mp4');
+  console.log(salida.salida.esCC); // esNOVELA
+  console.log(salida.salida.info.DBmetadata);
+})();
 ```
+
+### 4) Uso en Electron / proceso principal (`main`)
+
+```js
+const path = require('path');
+const { ipcMain } = require('electron');
+const { getLUNA } = require('luna-clasificador');
+const { getFFmpegPath } = require('./ResolverPathFFmpeg.js');
+
+const LUNA = getLUNA();
+let lunaInicializado = false;
+
+ipcMain.handle('luna:clasificar', async (event, entrada) => {
+  try {
+    if (!lunaInicializado) {
+      const ffmpegExe = getFFmpegPath();
+      const carpeta = path.dirname(ffmpegExe) + path.sep;
+      LUNA.setBinariosFromFolder(carpeta);
+      lunaInicializado = true;
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    if (entrada === 'info') {
+      return await LUNA.LUNAVersion();
+    }
+
+    return await LUNA.LUNA(entrada);
+  } catch (error) {
+    console.error('[LUNA:IPC] Error:', error);
+    return {
+      exito: false,
+      salida: null,
+      errores: [{ etapa: 'ipc', mensaje: error.message }]
+    };
+  }
+});
+```
+
+### 5) Uso real de ejemplo de mi app con cache de versión
+
+```js
+const { getLUNA, LUNA_PATH } = require('luna-clasificador');
+
+const LUNA = getLUNA();
+
+const ffmpegExe = getFFmpegPath();
+const carpeta = path.dirname(ffmpegExe) + path.sep;
+LUNA.setBinariosFromFolder(carpeta);
+
+let _lunaVersion = null;
+function obtenerVersionLUNA() {
+  if (_lunaVersion !== null) return _lunaVersion;
+
+  try {
+    if (typeof LUNA.LUNAVersion === 'function') {
+      const v = LUNA.LUNAVersion();
+      _lunaVersion = (v && typeof v === 'object') ? (v.versionLUNA || null) : (typeof v === 'string' ? v : null);
+    }
+
+    if (!_lunaVersion) {
+      const meta = typeof LUNA.infoDBMetadata === 'function' ? LUNA.infoDBMetadata() : null;
+      if (meta && meta.versionLUNA) _lunaVersion = meta.versionLUNA;
+    }
+  } catch (e) {
+    console.warn('[CINE] No se pudo obtener la versión de LUNA:', e.message);
+  }
+
+  if (!_lunaVersion) _lunaVersion = 'unknown';
+  return _lunaVersion;
+}
+```
+
+### 6) Qué devuelve LUNA
+
+La salida típica es este formato:
+
+```js
+{
+  exito: true,
+  salida: {
+    nombreOriginal: 'La Novia - 107 [15-10-2026].mp4',
+    nombreLimpio: 'La Novia',
+    tituloLimpio: null,
+    fechaExtra: '15-10-2026',
+    ruta: 'D:\\ANIME\\Thunder 3 [Temp 1] [2026] [Caps 12]\\La Novia - 107 [15-10-2026].mp4',
+    info: {
+      nombreLimpio: 'La Novia',
+      serie: 'La Novia',
+      temporada: 1,
+      capituloNumero: 107,
+      anio: null,
+      extension: 'mp4',
+      tipoArchivo: 'video',
+      categoriaGanadora: 'serie',
+      DBmetadata: {
+        categoriaDB: 'novela',
+        nombreOficial: 'La Novia'
+      }
+    },
+    extension: 'mp4',
+    tipoArchivo: 'video',
+    duracion: 1447.26,
+    esCC: 'esNOVELA'
+  },
+  errores: [],
+  meta: {
+    inicio: 172..., 
+    fin: 172..., 
+    duracionMs: 120
+  }
+}
+```
+
+> LUNA acepta `string`, `objeto de configuración`, `array de strings` y `array de configuraciones`. Siempre devuelve un objeto con `exito`, `salida` y `errores`.
 
 ---
 
@@ -841,7 +990,7 @@ Exatlon Mexico [T10] - [TX] [037].mp4               | esPROGRAM| 2530       | tr
 - **Autor:** Abraham de Jesús Piñirí Megret
 - **Agradecimientos:** DeepSeek
 - **Licencia:** MIT
-- **Versión LUNA:** `1.0.0`
+- **Versión LUNA:** `1.2.1`
 - **Versión DB:** `1.0.0`
 - **Fecha DB:** `2026-10-19`
 
@@ -867,6 +1016,8 @@ Exatlon Mexico [T10] - [TX] [037].mp4               | esPROGRAM| 2530       | tr
 ## 🆕 Novedades en v1.1.0
 
 Esta versión trae mejoras importantes en cómo LUNA limpia y estructura los nombres de los archivos, separando la información de la obra de la información del capítulo.
+
+> Si estás leyendo esto desde el README actual, ten en cuenta que la versión activa del proyecto es 1.2.1. La sección de v1.1.0 queda como referencia histórica del proyecto, no como versión actual.
 
 ### 1. Nuevo campo `tituloLimpio`
 Ahora LUNA es capaz de separar el nombre base (serie o película) de su título de capítulo/saga, usando el guion espaciado (` - `) como separador universal.
