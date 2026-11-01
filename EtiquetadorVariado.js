@@ -36,6 +36,11 @@ function determinarEtiquetaVariado(archivo, info) {
     if (/Screen(Record|Capture)_\d{8}_\d{6}/i.test(nombreOrig)) {
         return 'Grabación de Pantalla';
     }
+
+    if (/(?:Screen Recording|Grabaci[oó]n de pantalla)\s+\d{8}\s+\d{6}/i.test(nombreOrig)) {
+        return 'Grabación de Pantalla';
+    }
+
     if (/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\.(mp4|mkv|avi)$/i.test(nombreOrig)) {
         return 'Grabación de Pantalla'; // Formato OBS
     }
