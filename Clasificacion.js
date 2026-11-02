@@ -64,8 +64,8 @@ function obtenerTipoArchivo(nombreOriginal) {
 const DURACION = {
     PELICULA_MIN: 45 * 60,       // 45 min
     PELICULA_MAX: 3 * 60 * 60,   // 3 h
-    SERIE_MIN:    17 * 60,       // 17 min
-    SERIE_MAX:    2 * 60 * 60,   // 2 h
+    SERIE_MIN:    10 * 60,       // 10 min
+    SERIE_MAX:    3 * 60 * 60,   // 3 h
     VARIADO_MIN:  0.5 * 60,      // 30 seg
     VARIADO_MAX:  7 * 60,         // 7 min
     VARIADO_MEDIA_MAX:    10 * 60,
@@ -145,9 +145,9 @@ const PESOS_PELICULA = {
 // ----------------------------------------------------------------------------
 const PESOS_VARIADO = {
     // --- Duracion ---
-    duracion_corta:             40,   // 30 seg - 7 min: la senal mas fuerte
-    duracion_muy_corta:         20,   // < 30 seg (clips, samples)
-
+    duracion_corta:             80,   // 30 seg - 7 min: la senal mas fuerte
+    duracion_muy_corta:         60,   // < 30 seg (clips, samples)
+    duracion_media:             60,
         // --- Patrón de grabación inequívoco (NUEVO) ---
     patron_grabacion_fuerte:    350,  // Screen_Recording, VID_, IMG_, PTT-, WhatsApp, OBS...
     patron_grabacion_debil:     150,  // "grabacion", "screen capture", "video_" suelto
@@ -160,7 +160,7 @@ const PESOS_VARIADO = {
     ruta_interesantes:          25,   // Interesantes, Seccion Interesantes
     ruta_cuba_generica:         20,   // Seccion Cuba SIN "novelas"
 
-    duracion_media_variado:      25,  // NUEVO: 7min – 10min (para grabaciones de pantalla largas)
+    duracion_media_variado:      65,  // NUEVO: 7min – 10min (para grabaciones de pantalla largas)
     
     // --- Nombre del archivo ---
     nombre_personal:            40,   // IMG_, VID_, WhatsApp, VID-20, MVI_, DSC_, grabacion
@@ -1952,7 +1952,7 @@ function variado_amv_anime(archivo) {
     const nombreBase = quitarExtension(nombreOrig);
 
     // 1. ¿Tiene AMV / Anime Music Video / MAD / VideoClick en el nombre?
-    const matchAmv = nombreBase.match(/\b(AMV|amv|Anime\s*Music\s*Video|Anime\s*MV|MAD|VideoClick)\b/i);
+    const matchAmv = nombreBase.match(/(?:^|[\s_\-\/\(\)\[\]\{\}「」『』【】])(AMV|amv|rap|Anime\s*Music\s*Video|Anime\s*MV|MAD|VideoClick)(?:$|[\s_\-\/\(\)\[\]\{\}「」『』【】])/i);
     if (!matchAmv) return { puntos: {}, detecciones: {} };
 
     // 2. ¿Tiene indicios de VideoClick (corchetes o patrón artista - título)?

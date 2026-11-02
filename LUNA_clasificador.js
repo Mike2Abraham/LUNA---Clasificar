@@ -1085,6 +1085,53 @@ function tomarDecision(paquete) {
                 }
             }
 
+            // === RESTRICCION DURA: una serie debe durar entre 10min y 3h ===
+            if (elegido === 'esSERIE') {
+                const d = archivo.duracion || 0;
+                const dentroDeRangoSerie = d === 0 || (d >= 10 * 60 && d <= 3 * 60 * 60);
+            
+                if (!dentroDeRangoSerie) {
+                    const pPeliFinal = (rep.pelicula && rep.pelicula.puntos) || 0;
+                    const pVariFinal = (rep.variado && rep.variado.puntos) || 0;
+            
+                    if (pVariFinal >= pPeliFinal && pVariFinal > 0) {
+                        elegido = 'esVARIADO';
+                    } else if (pPeliFinal > 0) {
+                        elegido = 'esPELI';
+                    } else {
+                        elegido = 'esVARIADO';  // fallback: si no es serie, es variado
+                    }
+            
+                    paquete.errores.push({
+                        etapa: 'tomarDecision.restriccionSerie',
+                        ruta: archivo.ruta,
+                        mensaje: `Rechazado esSERIE por duracion ${d}s (fuera de 10min-3h). Reclasificado a ${elegido}.`,
+                        tipo: 'info'
+                    });
+            
+                    if (elegido === 'esVARIADO') {
+                        try {
+                            const Etiquetador = require('./EtiquetadorVariado.js');
+                            archivo.info.Etiqueta_V = Etiquetador.determinarEtiquetaVariado(archivo, archivo.info);
+                        } catch (e) {
+                            archivo.info.Etiqueta_V = 'Variado Desconocido';
+                        }
+                    }
+            
+                    if (archivo.info) {
+                        archivo.info.categoriaGanadora =
+                            elegido === 'esVARIADO' ? 'variado' :
+                            elegido === 'esPELI'    ? 'pelicula': 'variado';
+                        if (elegido === 'esVARIADO') {
+                            archivo.info.serie = null;
+                            archivo.info.temporada = null;
+                            archivo.info.capituloNumero = null;
+                            archivo.info.esEstructuraSerie = false;
+                        }
+                    }
+                }
+            }
+
             paquete.resultados.push({ esCC: elegido, archivo });
 
         } catch (e) {

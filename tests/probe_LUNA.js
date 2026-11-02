@@ -41,6 +41,10 @@ const RUTAS_PRUEBA = [
     "D:\\PELIS\\YOUTUBE\\vide025\\bios sec.mp4",
     "D:\\PELIS\\YOUTUBE\\video26\\FINAL.mp4",
     "D:\\PELIS\\YOUTUBE\\quitar clave\\20241209_031341.mp4",
+    "D:\\ANIME\\amv\\Kazuma Satou vs Subaru Natsuki __ Batallas de Rap Random __ Midoriya.mp4",
+    "D:\\ANIME\\amv\\Epicas batallas de rap del frikismo - Eren Jaeger vs. Kirito.mp4",
+    "D:\\ANIME\\amv\\Dua Lipa - Love Again (Official Music Video).mp4",
+    "D:\\ANIME\\amv\\MUSHOKU TENSEI AMV - DEPRESSION REINCARNATION(360P).mp4",
     'D:\\MÚSICA\\NEW\\Yomil y el Dany - SANTA 2 (video oficial) _drill(480P)_1.mp4'
 ];
 

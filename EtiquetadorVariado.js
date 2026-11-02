@@ -139,7 +139,7 @@ function determinarEtiquetaVariado(archivo, info) {
     // ------------------------------------------------------------------------
     if (duracion >= 60 && duracion <= 360) {
         const nombreBase = nombreOrig.replace(/\.[a-z0-9]{2,5}$/i, '');
-        const matchAmv = nombreBase.match(/\b(AMV|Anime\s*Music\s*Video|Anime\s*MV|MAD)\b/i);
+        const matchAmv = nombreBase.match(/(?:^|[\s_\-\/\(\)\[\]\{\}「」『』【】])(AMV|amv|rap|Anime\s*Music\s*Video|Anime\s*MV|MAD|VideoClick)(?:$|[\s_\-\/\(\)\[\]\{\}「」『』【】])/i);
         if (matchAmv) {
             const tieneIndicioVideoClick =
                 /\[[^\]]+\]|\([^\)]+\)/.test(nombreBase) ||
