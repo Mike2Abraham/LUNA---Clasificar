@@ -64,6 +64,148 @@ Fue diseñado para ordenar discos duros llenos de series, películas, novelas y 
 
 ***
 
+# README — Cambios v1.2.5 (Clasificación de variado + restricción de película)
+
+## Qué cambió en esta versión
+
+Esta versión corrige dos problemas grandes del clasificador:
+
+1. **Las grabaciones de pantalla, cámara y WhatsApp ahora se clasifican como `esVARIADO` con etiqueta específica**, en lugar de caer como `esSERIE` o `esPELI` por descarte.
+2. **Una película ya no puede ser película si no dura entre 45 minutos y 4 horas.** Es una restricción dura, no un puntaje.
+
+---
+
+<p align="center">
+  <img src="./assets/6.png" width="100%">
+</p>
+
+## 1. Nuevas banderas de variado (`Clasificacion.js`)
+
+Se agregaron banderas que suman puntos altos cuando detectan un patrón de grabación inequívoco. Ya no dependen de la duración ni de la ruta: si el nombre lo dice, suma.
+
+| Bandera | Puntos | Qué detecta |
+|---|---|---|
+| `variado_patron_grabacion_fuerte` | **+350** | `Screen_Recording`, `Screen_Capture`, `VID_`, `IMG_`, `MVI_`, `DSC_`, `PTT-`, `AUD-`, `WhatsApp`, OBS (`YYYY-MM-DD-HH-MM-SS`), `video_YYYY-MM-DD`, `Grabación de pantalla`. También si la **ruta** contiene `ScreenRecorder`, `Screen recordings`, `WhatsApp/Media` o `DCIM`. |
+| `variado_patron_grabacion_debil` | **+150** | `grabacion`, `screen record` (con espacio), `screen capture`, `videoplayback`, `record`, `sample`, `clip`, `trailer`, `teaser`, `fragmento`. |
+
+Con **350 puntos**, variado gana aunque serie tenga 35 por `Windows 10` y peli tenga 30 por descarte. No hace falta tocar `tomarDecision`.
+
+---
+
+## 2. Nuevo tramo de duración (`Clasificacion.js`)
+
+Antes, variado solo sumaba si el video duraba entre **30 segundos y 7 minutos**. Las grabaciones de pantalla suelen durar más. Se agregó un tramo intermedio:
+
+| Bandera | Rango | Puntos |
+|---|---|---|
+| `variado_duracion_muy_corta` | < 30 seg | +20 |
+| `variado_duracion_corta` | 30 seg – 7 min | +40 |
+| `variado_duracion_media` *(nuevo)* | 7 min – 10 min | +25 |
+
+Nueva constante: `DURACION.VARIADO_MEDIA_MAX = 10 * 60`.
+
+---
+
+## 3. Restricción dura de película (`LUNA_clasificador.js` → `tomarDecision`)
+
+**Una película debe durar entre 45 minutos y 4 horas.** Si un archivo gana como `esPELI` pero no cumple el rango, se reclasifica a la categoría con más puntos entre serie y variado.
+
+También se rechaza `esPELI` si el archivo está en una carpeta que no es de películas:
+
+```
+MÚSICA, Music, Videos de Youtube, YouTube Downloads, Electronica,
+Tutoriales, Cursos, Telegram Desktop, WhatsApp Media
+```
+
+**Excepción:** si la duración es `0` (metadata rota o `mediainfo` falló), se deja pasar **solo si la carpeta no es no-peli**. Esto evita romper películas reales con metadata rota (ej. `E.T..avi`), pero sí rechaza `naruto sasuka.mp4` en `MÚSICA`.
+
+**Por qué es una compuerta y no un puntaje:** aunque las banderas sigan sumando a peli por año, por carpeta `PELIS`, o por descarte, la compuerta final las ignora si la duración no cumple. Es una barrera de seguridad al final del pipeline, no un parche en cada bandera.
+
+---
+
+## 4. Nuevo `EtiquetadorVariado.js`
+
+El etiquetador solo se ejecuta si la categoría ganadora es `esVARIADO`. Antes fallaba con nombres como `Screen_Recording_20260630-062254_Chrome` porque el regex exigía `_` entre fecha y hora, y no reconocía `Screen_Recording` (con `_` entre `Screen` y `Recording`). Ahora:
+
+- Acepta `_` o `-` entre fecha y hora: `20260630-062254` y `20260630_062254`.
+- Acepta `Screen_Recording`, `ScreenCapture`, `Screen Recording` (iOS), OBS (`YYYY-MM-DD-HH-MM-SS`), `Grabación de pantalla`.
+- Detecta la **app** que aparece en el nombre y la agrega a la etiqueta: `Grabación de Pantalla (Chrome)`.
+- Detecta `video_YYYY-MM-DD_HH-MM-SS` en carpeta de Telegram → `Grabación de Telegram`.
+
+### Lista de apps reconocidas
+
+| Grupo | Apps |
+|---|---|
+| Navegadores | Chrome, Firefox, Edge, Brave, Opera, Safari |
+| Redes sociales | Facebook, Instagram, TikTok, X/Twitter, YouTube, WhatsApp, Telegram, Discord, Snapchat, Reddit, Pinterest, LinkedIn |
+| Videollamadas | Zoom, Google Meet, Microsoft Teams, Skype, Webex |
+| Reproductores / streaming | Lite, MX Player, VLC, PLAYit, Netflix, Spotify, Twitch, Prime Video, Disney+, HBO Max |
+| Juegos | Minecraft, Roblox, Fortnite, Free Fire, PUBG, Genshin Impact |
+| Sistema | Cámara, Ajustes, Galería |
+
+---
+
+## Catálogo de etiquetas `Etiqueta_V`
+
+`Etiqueta_V` solo se asigna cuando `esCC === "esVARIADO"`. Si el archivo es serie, peli, programa o novela, `Etiqueta_V` es `null`.
+
+| Etiqueta | Cuándo se asigna | Ejemplo de archivo |
+|---|---|---|
+| `Grabación de WhatsApp` | Nombre matchea `PTT-YYYYMMDD-WA####`, `VID-...-WA####`, `AUD-...-WA####`, o la ruta contiene `WhatsApp/Media` | `PTT-20240719-WA0002.opus` |
+| `Grabación de Pantalla` | Nombre matchea `Screen_Recording_YYYYMMDD-HHMMSS` (sin app reconocible), `ScreenCapture`, `Screen Recording YYYY-MM-DD`, OBS `YYYY-MM-DD-HH-MM-SS`, `Grabación de pantalla`. También si la ruta contiene `ScreenRecorder`, `Screen recordings`, `Grabaciones de pantalla` | `Screen_Recording_20260630-062254.mp4` |
+| `Grabación de Pantalla (App)` | Igual que la anterior, pero el nombre menciona una app de la lista | `Screen_Recording_20260630-062254_Chrome.mp4` → `Grabación de Pantalla (Chrome)` |
+| `Grabación de Telegram` | Nombre matchea `video_YYYY-MM-DD_HH-MM-SS` y la ruta contiene `Telegram` | `video_2026-10-25_05-18-43.mp4` en `Telegram Desktop/` |
+| `Grabación de Cámara / DCIM` | Nombre matchea `VID_YYYYMMDD`, `IMG_YYYYMMDD`, `MVI_####`, `DSC_####`, `_MG_####`. También si la ruta contiene `DCIM` | `VID_20261101_143022.mp4`, `IMG_4821.MP4` |
+| `Animado / Video Corto` | El `nombreLimpio` matchea una entrada de la categoría `variado` en `BD/luna_db.json` | `pocoyo (2) [12-2-26].mp4` (si `Pocoyó` está en la DB) |
+| `VideoClick` | Duración entre 1 y 6 minutos **y** el nombre tiene corchetes/paréntesis (pero no tags técnicos como `[1080p]`, `[4k]`), **o** matchea `Artista - Título [Official Video/Lyric/Audio]` | `Bebe_Rexha_-_Im_A_Mess_[Official_Music_Video](360p).mp4` |
+| `Variado Desconocido` | Ninguna de las anteriores matchea. Es el fallback seguro | `dasdasd.avi`, `Swordpla.avi` |
+
+**Nota:** las etiquetas de grabación (`Grabación de Pantalla`, `Grabación de WhatsApp`, `Grabación de Cámara / DCIM`, `Grabación de Telegram`) son **mutuamente excluyentes** y se evalúan en ese orden. Si un archivo matchea varias, gana la primera de la lista.
+
+---
+
+## Archivos modificados
+
+| Archivo | Cambio |
+|---|---|
+| `Clasificacion.js` | Nuevas banderas `variado_patron_grabacion_fuerte` (+350) y `variado_patron_grabacion_debil` (+150). Nuevo tramo `variado_duracion_media` (+25) y constante `VARIADO_MEDIA_MAX`. Registro en `BANDERAS_VARIADO_SINCRONAS`. Fix B1 en `variado_sin_patron_conocido` para no descartar timestamps. |
+| `LUNA_clasificador.js` | Compuerta de restricción de película en `tomarDecision` (duración 45min–4h + carpeta no-peli). |
+| `EtiquetadorVariado.js` | Reescrito completo. Regex de grabación de pantalla ampliado (`_` o `-`). Detección de app. Lista `APPS_GRABACION` exportada. Nueva etiqueta `Grabación de Telegram`. |
+
+---
+
+## Verificación rápida
+
+Después de aplicar los cambios, estos casos deben dar:
+
+```js
+// Grabación de pantalla con app
+await clasificar("...\\Screen_Recording_20260630-062254_Chrome.mp4")
+// → esCC: "esVARIADO", Etiqueta_V: "Grabación de Pantalla (Chrome)"
+
+// Grabación de pantalla sin app
+await clasificar("...\\Screen_Recording_20260630-062254.mp4")
+// → esCC: "esVARIADO", Etiqueta_V: "Grabación de Pantalla"
+
+// Grabación de cámara
+await clasificar("...\\VID_20261101_143022.mp4")
+// → esCC: "esVARIADO", Etiqueta_V: "Grabación de Cámara / DCIM"
+
+// Video de YouTube de 10 minutos (antes salía esPELI)
+await clasificar("...\\PELIS\\YOUTUBE\\windows10.mp4")
+// → esCC: "esVARIADO" (rechazado esPELI por duración 645s < 45min)
+
+// Película real de 2 horas
+await clasificar("...\\Peliculas\\El Señor de los Anillos.mkv")
+// → esCC: "esPELI" (1448s... ¡ojo! si es un sample de 24min, se rechaza; si dura 2h, pasa)
+```
+
+---
+
+## Resumen en una frase
+
+> **Variado ahora gana por patrón de grabación (350 pts), no por descarte. Y película exige 45min–4h y carpeta de películas, no solo puntos.**
+
 ## 🆕 Novedades en v1.2.4: Etiquetado Inteligente de Variados
 
 <p align="center">
