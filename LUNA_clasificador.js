@@ -1026,6 +1026,65 @@ function tomarDecision(paquete) {
                 }
             }
 
+                        // === RESTRICCION DURA: una pelicula debe durar entre 45min y 3h ===
+            // No es puntaje, es una compuerta. Si no cumple, NO es peli.
+            // Se recalcula a la categoria con mas puntos entre serie y variado.
+            if (elegido === 'esPELI') {
+                const d = archivo.duracion || 0;
+                const dentroDeRangoPeli =
+                    d === 0 ||  // duracion desconocida: no podemos descartar, dejamos pasar
+                    (d >= 45 * 60 && d <= 4 * 60 * 60);
+
+                if (!dentroDeRangoPeli) {
+                    // Recalcular: que gane serie o variado segun puntos reales
+                    const pSerieFinal = (rep.serie && rep.serie.puntos) || 0;
+                    const pVariFinal  = (rep.variado && rep.variado.puntos) || 0;
+
+                    if (pVariFinal >= pSerieFinal && pVariFinal > 0) {
+                        elegido = 'esVARIADO';
+                    } else if (pSerieFinal > 0) {
+                        elegido = 'esSERIE';
+                    } else {
+                        // Ni serie ni variado tienen puntos: por duracion, es variado
+                        elegido = 'esVARIADO';
+                    }
+
+                    // Registrar la decision para debug
+                    paquete.errores.push({
+                        etapa: 'tomarDecision.restriccionPeli',
+                        ruta: archivo.ruta,
+                        mensaje: `Rechazado esPELI por duracion ${d}s (fuera de 45min-4h). Reclasificado a ${elegido}.`,
+                        tipo: 'info'   // no es error real, es traza
+                    });
+
+                    // Si paso a variado, calcular etiqueta
+                    if (elegido === 'esVARIADO') {
+                        try {
+                            const Etiquetador = require('./EtiquetadorVariado.js');
+                            const etiqueta = Etiquetador.determinarEtiquetaVariado(archivo, archivo.info);
+                            archivo.info.Etiqueta_V = etiqueta;
+                        } catch (e) {
+                            archivo.info.Etiqueta_V = 'Variado Desconocido';
+                        }
+                    }
+
+                    // Si paso a serie, limpiar campos de peli que no aplican
+                    if (elegido === 'esSERIE' && archivo.info) {
+                        archivo.info.anio = archivo.info.anio || null; // mantener año si existe, no es excluyente
+                        archivo.info.parte = null;
+                    }
+
+                    // Actualizar categoriaGanadora en info
+                    if (archivo.info) {
+                        archivo.info.categoriaGanadora =
+                            elegido === 'esVARIADO' ? 'variado' :
+                            elegido === 'esSERIE'   ? 'serie'   :
+                            elegido === 'esNOVELA'  ? 'novela'  :
+                            elegido === 'esPROGRAM' ? 'programa': 'variado';
+                    }
+                }
+            }
+
             paquete.resultados.push({ esCC: elegido, archivo });
 
         } catch (e) {

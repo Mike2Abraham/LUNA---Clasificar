@@ -63,7 +63,7 @@ function obtenerTipoArchivo(nombreOriginal) {
 // ----------------------------------------------------------------------------
 const DURACION = {
     PELICULA_MIN: 45 * 60,       // 45 min
-    PELICULA_MAX: 4 * 60 * 60,   // 4 h
+    PELICULA_MAX: 3 * 60 * 60,   // 3 h
     SERIE_MIN:    17 * 60,       // 17 min
     SERIE_MAX:    2 * 60 * 60,   // 2 h
     VARIADO_MIN:  0.5 * 60,      // 30 seg
