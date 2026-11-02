@@ -1929,6 +1929,58 @@ function variado_ruta_cuba_generica(archivo) {
     return { puntos: {}, detecciones: {} };
 }
 
+/**
+ * NUEVO — v1.3.1
+ * AMV / VideoClick de anime. Suma 300 puntos a variado.
+ *
+ * Condiciones (todas deben cumplirse):
+ *   1. Duración entre 1 y 6 minutos (60s – 360s)
+ *   2. El nombre contiene "AMV" (o variantes: "Anime Music Video",
+ *      "Anime MV", "MAD" de anime, "VideoClick")
+ *   3. (Opcional pero recomendado) El nombre tiene corchetes/paréntesis
+ *      típicos de VideoClick: [Official Video], [Lyrics], (360P), (720P_HD)
+ *      o el patrón "Artista - Título [tag]"
+ *
+ * Si NO cumple las 3, no suma. Es una regla estricta para evitar
+ * falsos positivos en películas que se llamen "AMV" por casualidad.
+ */
+function variado_amv_anime(archivo) {
+    const d = archivo.duracion || 0;
+    if (d < 60 || d > 360) return { puntos: {}, detecciones: {} };
+
+    const nombreOrig = archivo.nombreOriginal || '';
+    const nombreBase = quitarExtension(nombreOrig);
+
+    // 1. ¿Tiene AMV / Anime Music Video / MAD / VideoClick en el nombre?
+    const matchAmv = nombreBase.match(/\b(AMV|amv|Anime\s*Music\s*Video|Anime\s*MV|MAD|VideoClick)\b/i);
+    if (!matchAmv) return { puntos: {}, detecciones: {} };
+
+    // 2. ¿Tiene indicios de VideoClick (corchetes o patrón artista - título)?
+    const tieneCorchetes = /\[[^\]]+\]|\([^\)]+\)/.test(nombreBase);
+    const tienePatronArtista = /\s[-–—]\s/.test(nombreBase);
+    const tieneTagVideoClick = /\[(?:Official|Video|Lyric|Audio|MV|AMV)[^\]]*\]/i.test(nombreOrig);
+
+    // Aceptamos si tiene al menos UNA de las señales de VideoClick
+    if (!tieneCorchetes && !tienePatronArtista && !tieneTagVideoClick) {
+        return { puntos: {}, detecciones: {} };
+    }
+
+    // 3. No debe tener patrón de serie/peli (para no robar)
+    const nombreNorm = normalizarParaMatching(nombreBase);
+    if (/\bs\d{1,2}\s*e\d{1,2}\b/i.test(nombreNorm)) return { puntos: {}, detecciones: {} };
+    if (/\b\d{1,2}\s*x\s*\d{1,2}\b/i.test(nombreNorm)) return { puntos: {}, detecciones: {} };
+    if (/\b(?:cap|capitulo|ep|episodio)\s*[-.]?\s*\d{1,3}\b/i.test(nombreNorm)) return { puntos: {}, detecciones: {} };
+
+    return {
+        puntos: { variado: 300 },
+        detecciones: {
+            amv: matchAmv[1],
+            patron: 'amv_anime',
+            duracionSegundos: d
+        }
+    };
+}
+
 
 function variado_nombre_personal(archivo) {
     const nombre = archivo.nombreOriginal;
@@ -2271,6 +2323,9 @@ const BANDERAS_VARIADO_SINCRONAS = [
         // --- Patrón de grabación (NUEVO, suma alto) ---
     variado_patron_grabacion_fuerte,   // +350
     variado_patron_grabacion_debil,    // +150
+
+        // --- AMV / VideoClick de anime (NUEVO) ---
+    variado_amv_anime,                 // +300
 
     // --- Duracion ---
     variado_duracion_corta,

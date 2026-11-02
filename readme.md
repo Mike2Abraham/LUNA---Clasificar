@@ -163,6 +163,33 @@ El etiquetador solo se ejecuta si la categoría ganadora es `esVARIADO`. Antes f
 **Nota:** las etiquetas de grabación (`Grabación de Pantalla`, `Grabación de WhatsApp`, `Grabación de Cámara / DCIM`, `Grabación de Telegram`) son **mutuamente excluyentes** y se evalúan en ese orden. Si un archivo matchea varias, gana la primera de la lista.
 
 ---
+<p align="center">
+  <img src="./assets/7.png" width="100%">
+</p>
+
+Nueva bandera en Clasificacion.js
+Bandera	Puntos	Qué detecta
+variado_amv_anime	+300	Duración 1–6 min y el nombre contiene AMV, Anime Music Video, Anime MV, MAD o VideoClick y tiene indicios de VideoClick (corchetes, patrón Artista - Título, o tag [Official Video]).
+Nueva etiqueta en EtiquetadorVariado.js
+Etiqueta	Cuándo se asigna	Ejemplo
+AMV - Anime	Duración 1–6 min + AMV/MAD/VideoClick en el nombre + indicios de VideoClick (corchetes, Artista - Título, o [Official Video])	Itachi Uchiha (Loneliness) AMV(720P_60FPS).mp4, Obito AMV - In the End(720P_HD).mp4, MUSHOKU TENSEI AMV - DEPRESSION REINCARNATION(360P).mp4
+Orden de evaluación de etiquetas (actualizado)
+Grabación de WhatsApp
+
+Grabación de Pantalla
+
+Grabación de Cámara / DCIM
+
+Grabación de App específica (Telegram)
+
+AMV - Anime ← nuevo
+
+Animado / Video Corto (DB)
+
+VideoClick
+
+Variado Desconocido
+
 
 ## Archivos modificados
 

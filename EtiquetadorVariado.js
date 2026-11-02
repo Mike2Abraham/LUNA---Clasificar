@@ -133,6 +133,25 @@ function determinarEtiquetaVariado(archivo, info) {
     }
 
     // ------------------------------------------------------------------------
+    // 2.5. AMV / VideoClick de anime (NUEVO — v1.3.1)
+    //      Duración 1–6 min + AMV en el nombre + indicios de VideoClick.
+    //      Etiqueta: "AMV - Anime"
+    // ------------------------------------------------------------------------
+    if (duracion >= 60 && duracion <= 360) {
+        const nombreBase = nombreOrig.replace(/\.[a-z0-9]{2,5}$/i, '');
+        const matchAmv = nombreBase.match(/\b(AMV|Anime\s*Music\s*Video|Anime\s*MV|MAD)\b/i);
+        if (matchAmv) {
+            const tieneIndicioVideoClick =
+                /\[[^\]]+\]|\([^\)]+\)/.test(nombreBase) ||
+                /\s[-–—]\s/.test(nombreBase) ||
+                /\[(?:Official|Video|Lyric|Audio|MV|AMV)[^\]]*\]/i.test(nombreOrig);
+            if (tieneIndicioVideoClick) {
+                return 'AMV - Anime';
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------------
     // 3. Grabación de Cámara / DCIM (Teléfono o Cámara profesional)
     // ------------------------------------------------------------------------
     // Patrones: VID_20250115_143022.mp4, IMG_4821.MP4, _MG_4821.MOV
