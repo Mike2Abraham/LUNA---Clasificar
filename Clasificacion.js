@@ -67,7 +67,8 @@ const DURACION = {
     SERIE_MIN:    17 * 60,       // 17 min
     SERIE_MAX:    2 * 60 * 60,   // 2 h
     VARIADO_MIN:  0.5 * 60,      // 30 seg
-    VARIADO_MAX:  7 * 60         // 7 min
+    VARIADO_MAX:  7 * 60,         // 7 min
+    VARIADO_MEDIA_MAX:    10 * 60,
 };
 
 
@@ -147,6 +148,10 @@ const PESOS_VARIADO = {
     duracion_corta:             40,   // 30 seg - 7 min: la senal mas fuerte
     duracion_muy_corta:         20,   // < 30 seg (clips, samples)
 
+        // --- Patrón de grabación inequívoco (NUEVO) ---
+    patron_grabacion_fuerte:    350,  // Screen_Recording, VID_, IMG_, PTT-, WhatsApp, OBS...
+    patron_grabacion_debil:     150,  // "grabacion", "screen capture", "video_" suelto
+
     // --- Ruta (carpetas) ---
     ruta_variados:              40,   // Variados, Varios, Random, Misc, Otros
     ruta_personal:              35,   // Personal, Mis Videos, Camara, Celular, Telefono
@@ -155,6 +160,8 @@ const PESOS_VARIADO = {
     ruta_interesantes:          25,   // Interesantes, Seccion Interesantes
     ruta_cuba_generica:         20,   // Seccion Cuba SIN "novelas"
 
+    duracion_media_variado:      25,  // NUEVO: 7min – 10min (para grabaciones de pantalla largas)
+    
     // --- Nombre del archivo ---
     nombre_personal:            40,   // IMG_, VID_, WhatsApp, VID-20, MVI_, DSC_, grabacion
     nombre_generico:            15,   // "video", "clip", "sample", numeros sueltos
@@ -1698,6 +1705,17 @@ function variado_duracion_corta(archivo) {
     return { puntos: {}, detecciones: {} };
 }
 
+function variado_duracion_media(archivo) {
+    const d = archivo.duracion || 0;
+    if (d === 0) return { puntos: {}, detecciones: {} };
+    if (d > DURACION.VARIADO_MAX && d <= DURACION.VARIADO_MEDIA_MAX) {
+        return {
+            puntos: { variado: PESOS_VARIADO.duracion_media_variado }, // 25
+            detecciones: { duracionTipica: 'variado_media', duracionSegundos: d, patron: 'duracion_media' }
+        };
+    }
+    return { puntos: {}, detecciones: {} };
+}
 
 function variado_duracion_muy_corta(archivo) {
     const d = archivo.duracion || 0;
@@ -1783,6 +1801,86 @@ function variado_ruta_documental(archivo) {
     return { puntos: {}, detecciones: {} };
 }
 
+/**
+ * NUEVO — v1.3.0
+ * Patrón de grabación inequívoco. Suma 350 puntos a variado.
+ * Cubre: Screen_Recording, Screen_Capture, VID_, IMG_, MVI_, DSC_, PTT-, AUD-,
+ *        WhatsApp, OBS (YYYY-MM-DD-HH-MM-SS), Grabación de pantalla,
+ *        video_YYYY-MM-DD (Telegram Desktop).
+ */
+function variado_patron_grabacion_fuerte(archivo) {
+    const nombreOrig = archivo.nombreOriginal || '';
+    const nombreBase = quitarExtension(nombreOrig);
+
+    const patrones = [
+        /^Screen[_\-\s]?Record(?:ing)?[_\-\s]?\d{8}/i,       // Screen_Recording_20260630
+        /^Screen[_\-\s]?Capture[_\-\s]?\d{8}/i,              // Screen_Capture_2026...
+        /^Screen[_\-\s]?Recording[_\-\s]?\d{4}[-\s]\d{2}[-\s]\d{2}/i,
+        /^Grabaci[oó]n[_\-\s]?de[_\-\s]?pantalla/i,
+        /^VID[_-]\d{8}/i,                                    // VID_20261101_143022
+        /^IMG[_-]\d{8}/i,                                    // IMG_20250115_143022
+        /^MVI[_-]\d{4}/i,                                    // MVI_4821
+        /^DSC[_-]\d{4}/i,                                    // DSC_4821
+        /^_MG[_-]\d{4}/i,
+        /^PTT-\d{8}-WA\d{4}/i,                               // PTT-20240719-WA0002
+        /^AUD-\d{8}-WA\d{4}/i,                               // AUD-2023...-WA0001
+        /^VID-\d{8}-WA\d{4}/i,                               // VID-2023...-WA0001
+        /WhatsApp/i,                                         // ruta o nombre con WhatsApp
+        /^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}\.(?:mp4|mkv|avi)$/i, // OBS
+        /^video[_-]\d{4}[-\s]\d{2}[-\s]\d{2}/i,              // video_2026-10-25_05-18-43
+        /^video[_-]\d{8}/i,                                  // video_20261025
+    ];
+
+    for (const re of patrones) {
+        if (re.test(nombreBase) || re.test(nombreOrig)) {
+            return {
+                puntos: { variado: PESOS_VARIADO.patron_grabacion_fuerte },  // 350
+                detecciones: { patronGrabacion: re.toString(), patron: 'patron_grabacion_fuerte' }
+            };
+        }
+    }
+
+    // También si la ruta contiene "ScreenRecorder", "Screen recordings", "WhatsApp/Media", "DCIM"
+    const ruta = (archivo.ruta || '').toLowerCase();
+    if (/(screen[_\-\s]?record(?:ings?)?|screen[_\-\s]?captures?|whatsapp[\\\/]media|dcim[\\\/])/i.test(ruta)) {
+        return {
+            puntos: { variado: PESOS_VARIADO.patron_grabacion_fuerte },
+            detecciones: { patronGrabacion: 'ruta_grabacion', patron: 'patron_grabacion_fuerte_ruta' }
+        };
+    }
+
+    return { puntos: {}, detecciones: {} };
+}
+
+/**
+ * NUEVO — v1.3.0
+ * Patrón de grabación débil. Suma 150 puntos a variado.
+ * Cubre: "grabacion" genérico, "screen record" con espacio, "screen capture" sin guion,
+ *        "videoplayback", "sample", "clip", "record".
+ */
+function variado_patron_grabacion_debil(archivo) {
+    const nombreBase = quitarExtension(archivo.nombreOriginal || '');
+
+    const patrones = [
+        /grabaci[oó]n/i,
+        /screen[_\-\s]?record(?:ing)?/i,
+        /screen[_\-\s]?capture/i,
+        /videoplayback/i,
+        /\brecord(?:ing)?\b/i,
+        /\b(sample|clip|trailer|teaser|fragmento)\b/i,
+    ];
+
+    for (const re of patrones) {
+        if (re.test(nombreBase)) {
+            return {
+                puntos: { variado: PESOS_VARIADO.patron_grabacion_debil },  // 150
+                detecciones: { patronGrabacionDebil: re.toString(), patron: 'patron_grabacion_debil' }
+            };
+        }
+    }
+
+    return { puntos: {}, detecciones: {} };
+}
 
 function variado_ruta_animados_variados(archivo) {
     const carpetas = obtenerCarpetasDeRuta(archivo.ruta);
@@ -1887,7 +1985,7 @@ function variado_sin_patron_conocido(archivo) {
 
     // Excluir contadores tipo "Bless The Harts (1) [28-08-26]" que no son episodios ni series,
     // sino videos sueltos/animados variados con numeracion de duplicado.
-    if (/\(\d{1,2}\)\s*\[[0-9]{2}-[0-9]{2}-[0-9]{2}\]$/.test(nombreOrig)) {
+    if (/[\s\._\-](?:19|20)\d{2}(?!\d)[\s\._\-]?/.test(nombreOrig)) {
         return {
             puntos: { variado: PESOS_VARIADO.sin_patron_conocido },
             detecciones: { patron: 'animado_duplicado_fecha' }
@@ -2170,8 +2268,13 @@ const BANDERAS_PELICULA_SINCRONAS = [
 ];
 
 const BANDERAS_VARIADO_SINCRONAS = [
+        // --- Patrón de grabación (NUEVO, suma alto) ---
+    variado_patron_grabacion_fuerte,   // +350
+    variado_patron_grabacion_debil,    // +150
+
     // --- Duracion ---
     variado_duracion_corta,
+    variado_duracion_media,            // +25  (7min–10min) NUEVO
     variado_duracion_muy_corta,
     // --- Ruta ---
     variado_ruta_variados,
