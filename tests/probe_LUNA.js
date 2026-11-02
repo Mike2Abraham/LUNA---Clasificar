@@ -37,6 +37,10 @@ const RUTAS_PRUEBA = [
     'D:\\MÚSICA\\NEW\\ScreenRecord_20261101-143022.mp4',
     "D:\\AA-PC\\8 Gadget Pack Windows 10\\houses\\new\\Screen_Recording_20260630-062254_Chrome.mp4",
     "D:\\COSAS DE CELULAR\\Movies\\Screen_Recording_20241030-143737_Lite.mp4",
+    "D:\\PELIS\\YOUTUBE\\quitar clave\\20241209_030541.mp4",
+    "D:\\PELIS\\YOUTUBE\\vide025\\bios sec.mp4",
+    "D:\\PELIS\\YOUTUBE\\video26\\FINAL.mp4",
+    "D:\\PELIS\\YOUTUBE\\quitar clave\\20241209_031341.mp4",
     'D:\\MÚSICA\\NEW\\Yomil y el Dany - SANTA 2 (video oficial) _drill(480P)_1.mp4'
 ];
 

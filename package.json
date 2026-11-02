@@ -1,6 +1,6 @@
 {
   "name": "luna-clasificador",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "icon": "assets/icons.png",
   "description": "Clasificador local de archivos multimedia (película, serie, variado, programa, novela)",
   "main": "LUNA.js",
